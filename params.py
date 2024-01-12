@@ -5,6 +5,21 @@ from astropy import units as u
 from .utils import get_v_0_e, UNIT_DVEFF
 
 
+def guess_pars_phys(target):
+    pars_mdl = {
+        "cosi_p": np.cos(target.i_p_prior_mu),
+        "omega_p": target.omega_p_prior_mu,
+        "d_p": target.parallax_prior_mu.to(
+            u.pc, equivalencies=u.parallax()
+        ),
+        "s": 0.8 * u.dimensionless_unscaled,
+        "xi": 62.0 * u.deg,
+        "v_lens": 4.0 * u.km / u.s,
+    }
+
+    return pars_mdl
+
+
 def pars_phys2phen(pars_phys, target):
     """Convert physical parameters to phenomenological model parameters."""
 

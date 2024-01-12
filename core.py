@@ -14,6 +14,7 @@ import emcee
 
 from IPython.display import display, Math
 
+from .params import guess_pars_phys
 from .utils import get_v_0_e, th2ma, gaussian, get_16_50_84
 from .utils import UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS, PARS_LABELS_UNITS
 
@@ -562,25 +563,11 @@ class FitPhys(FitBase):
             log_prob = log_prior + log_likelihood
         return log_prob
 
-    def guess_pars_mdl(self):
-        pars_mdl = {
-            "cosi_p": np.cos(self.model.target.i_p_prior_mu),
-            "omega_p": self.model.target.omega_p_prior_mu,
-            "d_p": self.model.target.parallax_prior_mu.to(
-                u.pc, equivalencies=u.parallax()
-            ),
-            "s": 0.8 * u.dimensionless_unscaled,
-            "xi": 62.0 * u.deg,
-            "v_lens": 4.0 * u.km / u.s,
-        }
-
-        return pars_mdl
-
     def optimize(
         self, pars_mdl_init=None, method="Nelder-Mead", options={"maxiter": 100000}
     ):
         if pars_mdl_init is None:
-            pars_mdl_init = self.guess_pars_mdl()
+            pars_mdl_init = guess_pars_phys(self.model.target)
         pars_fit_init = self.model.pars_mdl2fit(pars_mdl_init)
 
         def get_neg_log_prob(*args):
@@ -603,7 +590,7 @@ class FitPhys(FitBase):
         """Crude iterative method to find and set EQUAD for which chi^2 = 1"""
 
         if pars_mdl_init is None:
-            pars_mdl_init = self.guess_pars_mdl()
+            pars_mdl_init = guess_pars_phys(self.model.target)
 
         if init_equad is None:
             init_equad = self.data.dveff_err_original.mean()
