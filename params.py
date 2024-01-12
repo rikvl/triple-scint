@@ -5,8 +5,14 @@ from astropy import units as u
 from .utils import get_v_0_e, UNIT_DVEFF
 
 
+def guess_pars_phen(target):
+    pars_phys = guess_pars_phys(target)
+    pars_phen = pars_phys2phen(pars_phys, target)
+    return pars_phen
+
+
 def guess_pars_phys(target):
-    pars_mdl = {
+    pars_phys = {
         "cosi_p": np.cos(target.i_p_prior_mu),
         "omega_p": target.omega_p_prior_mu,
         "d_p": target.parallax_prior_mu.to(
@@ -17,7 +23,7 @@ def guess_pars_phys(target):
         "v_lens": 4.0 * u.km / u.s,
     }
 
-    return pars_mdl
+    return pars_phys
 
 
 def pars_phys2phen(pars_phys, target):
