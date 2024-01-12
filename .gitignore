@@ -1,0 +1,17 @@
+# Compiled files
+__pycache__
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Mac OSX
+.DS_Store
+
+# VSCode
+.vscode
+
+# Backup code junk file
+bup.py
