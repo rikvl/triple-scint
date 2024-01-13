@@ -212,25 +212,46 @@ def visualize_model_zoom(model, data, pars):
 
     # --- zooms ---
 
-    tlim_zoom_list = [
-        59299.84 + np.array([-3.5, 0.5]),
-        59403.57 + np.array([-0.5, 0.5]),
-        59498.39 + np.array([-2.5, 0.5]),
-        59575.09 + np.array([-0.5, 0.5]),
-        59647.95 + np.array([-0.5, 0.5]),
-        59732.65 + np.array([-0.5, 0.5]),
-        59827.41 + np.array([-0.5, 0.5]),
-        59919.22 + np.array([-0.5, 0.5]),
+    tlim_zoom_half = 0.55
+    tlim_zoom_size = np.array([-1, 1]) * tlim_zoom_half
+    t_zoom_list = [
+        59299.84,
+        59403.57,
+        59498.39,
+        59575.09,
+        59647.95,
+        59732.65,
+        59827.41,
+        59919.22,
     ]
 
-    for izoom, tlim_zoom in zip(np.arange(len(tlim_zoom_list)), tlim_zoom_list):
+    izoom_big = {
+        0: np.array([-2.7, 0]),
+        # 1: np.array([-3.7, 0]),
+        2: np.array([-2.3, 0]),
+        # 7: np.array([-3.7, 0]),
+    }
+
+    iax_upper = 10
+    for izoom, t_zoom in enumerate(t_zoom_list):
+        # generate letter of panel
         letter = chr(ord("`") + izoom + 3)
+
+        # create subplot
+        iax_lower = iax_upper + 1
+        iax_upper = iax_lower
+        if izoom in izoom_big:
+            iax_upper += 1
+        ax3 = plt.subplot(4, 5, (iax_lower, iax_upper))
+
+        tlim_zoom = t_zoom + tlim_zoom_size
+        if izoom in izoom_big:
+            tlim_zoom += izoom_big[izoom]
 
         # add zoom label to main plot
         tmid_zoom = np.mean(tlim_zoom)
         ax1.text(
             tmid_zoom,
-            # (0.3 + 0.9 * ((izoom == 4) or (izoom == 6))) * np.sqrt(1000),
             -5,
             f"{letter}",
             fontsize=15,
@@ -248,26 +269,22 @@ def visualize_model_zoom(model, data, pars):
         t_zoom, dveff_mdl_many = insert_zeros(t_zoom, dveff_mdl_zoom)
         dveff_mdl_zoom = np.abs(dveff_mdl_zoom)
 
-        if izoom == 0:
-            ax3 = plt.subplot(4, 5, (11, 12))
-        elif izoom == 2:
-            ax3 = plt.subplot(4, 5, (14, 15))
-        else:
-            ax3 = plt.subplot(4, 5, izoom + 12 + (izoom > 2))
-
         plt.ylim(ylim1)
 
-        if (izoom == 0) or (izoom == 3):
+        # set vertical axis labels on left
+        if iax_lower % 5 == 1:
             plt.ylabel(dveff_lbl)
         else:
             plt.ylabel("")
             ax3.set_yticklabels([])
 
+        # create secondary axis
         secax = ax3.secondary_yaxis(
             "right", functions=(dveff2dtsqrttau, dtsqrttau2dveff)
         )
 
-        if (izoom == 2) or (izoom == 7):
+        # set vertical axis labels on right
+        if iax_upper % 5 == 0:
             secax.set_ylabel(dtsqrttau_lbl)
         else:
             secax.set_yticklabels([])
@@ -277,7 +294,11 @@ def visualize_model_zoom(model, data, pars):
         plt.plot(t_fail.mjd, dveff_mdl_fail, **fail_style)
         plt.xlim(tlim_zoom)
 
-        caldate = Time(tlim_zoom_list[izoom][-1] - 0.5, format="mjd").iso[:10]
+        # panel title
+        caldate = Time(tlim_zoom[0] + tlim_zoom_half, format="mjd").iso[:10]
+        if izoom in izoom_big:
+            caldate2 = Time(tlim_zoom[-1] - tlim_zoom_half, format="mjd").iso[:10]
+            caldate += "   &   " + caldate2
         plt.title(f" ({letter})   {caldate}", color=col_zoom_lbl, **title_kwargs)
 
         plt.draw()
