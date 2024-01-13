@@ -34,7 +34,7 @@ def get_v_0_e():
 
     v_0_e = 2 * np.pi * a_e / (p_orb_e * np.sqrt(1 - ecc_e**2))
 
-    return v_0_e
+    return v_0_e.to(u.km / u.s)
 
 
 def th2ma(th, ecc):

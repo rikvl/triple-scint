@@ -6,7 +6,7 @@ from astropy import constants as const
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, SkyOffsetFrame, EarthLocation
 
-from scipy.optimize import minimize
+from scipy.optimize import curve_fit, minimize
 
 from kepler import kepler as solve_kepler
 
@@ -14,7 +14,7 @@ import emcee
 
 from IPython.display import display, Math
 
-from .params import guess_pars_phys
+from .params import guess_pars_phen, guess_pars_phys
 from .utils import get_v_0_e, th2ma, gaussian, get_16_50_84
 from .utils import UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS, PARS_LABELS_UNITS
 
@@ -313,7 +313,7 @@ class ModelPhen(ModelBase):
 
         return (dveff).to(UNIT_DVEFF)
 
-    def pars_fit2mdl(pars_fit):
+    def pars_fit2mdl(self, pars_fit):
         """Convert list of parameters for fitting to dict of Astropy Quantities."""
 
         amp_e_ra_cosdec, amp_e_dec, amp_ps, amp_pc, dveff_c = pars_fit
@@ -321,14 +321,14 @@ class ModelPhen(ModelBase):
         pars_mdl = {
             "amp_e_ra_cosdec": amp_e_ra_cosdec * UNIT_DVEFF,
             "amp_e_dec": amp_e_dec * UNIT_DVEFF,
-            "amp_ps": dveff_c * UNIT_DVEFF,
-            "amp_pc": dveff_c * UNIT_DVEFF,
+            "amp_ps": amp_ps * UNIT_DVEFF,
+            "amp_pc": amp_pc * UNIT_DVEFF,
             "dveff_c": dveff_c * UNIT_DVEFF,
         }
 
         return pars_mdl
 
-    def pars_mdl2fit(pars_mdl):
+    def pars_mdl2fit(self, pars_mdl):
         """Convert dict of Astropy Quantities to list of parameters for fitting."""
 
         pars_fit = np.array(
@@ -464,10 +464,10 @@ class ModelPhys(ModelBase):
         cosi_p, omega_p, d_p, s, xi, v_lens = pars_fit
 
         pars_mdl = {
-            "cosi_p": cosi_p.to(u.dimensionless_unscaled),
+            "cosi_p": cosi_p * u.dimensionless_unscaled,
             "omega_p": (omega_p * u.rad).to(u.deg),
-            "d_p": (d_p * u.kpc).to(u.pc),
-            "s": s.to(u.dimensionless_unscaled),
+            "d_p": d_p * u.kpc,
+            "s": s * u.dimensionless_unscaled,
             "xi": (xi * u.rad).to(u.deg),
             "v_lens": v_lens * u.km / u.s,
         }
@@ -544,53 +544,11 @@ class FitBase:
 
         print(f"\nequad    {self.data.equad:8.2f}")
 
-
-class FitPhys(FitBase):
-    """Fit of physical model with a given dataset."""
-
-    def get_log_likelihood(self, pars_fit):
-        pars_mdl = self.model.pars_fit2mdl(pars_fit)
-        chi2 = self.get_chi2(pars_mdl)
-        log_likelihood = -0.5 * chi2
-        return log_likelihood
-
-    def get_log_prob(self, pars_fit):
-        log_prior = self.model.get_log_prior(pars_fit, self.priors)
-        if log_prior == -np.inf:
-            log_prob = -np.inf
-        else:
-            log_likelihood = self.get_log_likelihood(pars_fit)
-            log_prob = log_prior + log_likelihood
-        return log_prob
-
-    def optimize(
-        self, pars_mdl_init=None, method="Nelder-Mead", options={"maxiter": 100000}
-    ):
-        if pars_mdl_init is None:
-            pars_mdl_init = guess_pars_phys(self.model.target)
-        pars_fit_init = self.model.pars_mdl2fit(pars_mdl_init)
-
-        def get_neg_log_prob(*args):
-            return -self.get_log_prob(*args)
-
-        res = minimize(
-            get_neg_log_prob,
-            pars_fit_init,
-            method=method,
-            options=options,
-        )
-
-        pars_mdl = self.model.pars_fit2mdl(res.x)
-
-        self.best_fit = pars_mdl
-
-        return pars_mdl
-
     def find_equad(self, pars_mdl_init=None, init_equad=None, tol=1e-4, maxiter=100):
         """Crude iterative method to find and set EQUAD for which chi^2 = 1"""
 
         if pars_mdl_init is None:
-            pars_mdl_init = guess_pars_phys(self.model.target)
+            pars_mdl_init = self.guess_pars(self.model.target)
 
         if init_equad is None:
             init_equad = self.data.dveff_err_original.mean()
@@ -611,6 +569,120 @@ class FitPhys(FitBase):
             new_equad = cur_equad * chi2red
             chi2diff = np.abs(chi2red - 1)
             niter += 1
+
+
+class FitPhen(FitBase):
+    """Fit of phenomenological model with a given dataset."""
+
+    def guess_pars(self, target):
+        return guess_pars_phen(target)
+
+    def optimize(self, pars_mdl_init=None):
+        if pars_mdl_init is None:
+            pars_mdl_init = self.guess_pars(self.model.target)
+        pars_fit_init = self.model.pars_mdl2fit(pars_mdl_init)
+
+        indep_vars = np.array(
+            [
+                self.sin_term_i_obs.to_value(u.dimensionless_unscaled),
+                self.cos_term_i_obs.to_value(u.dimensionless_unscaled),
+                self.sin_term_o_obs.to_value(u.dimensionless_unscaled),
+                self.cos_term_o_obs.to_value(u.dimensionless_unscaled),
+                self.scaled_v_earth_xyz_obs[0, :].value,
+                self.scaled_v_earth_xyz_obs[1, :].value,
+                self.scaled_v_earth_xyz_obs[2, :].value,
+            ]
+        )
+
+        def model_dveff_fit(indep_vars, *pars_fit):
+            sin_term_i = indep_vars[0, :]
+            cos_term_i = indep_vars[1, :]
+            sin_term_o = indep_vars[2, :]
+            cos_term_o = indep_vars[3, :]
+            scaled_v_earth_x = indep_vars[4, :]
+            scaled_v_earth_y = indep_vars[5, :]
+            scaled_v_earth_z = indep_vars[6, :]
+
+            scaled_v_earth_xyz = np.array(
+                [
+                    scaled_v_earth_x,
+                    scaled_v_earth_y,
+                    scaled_v_earth_z,
+                ]
+            )
+
+            pars_mdl = self.model.pars_fit2mdl(pars_fit)
+
+            dveff_abs = self.model.model_dveff_abs(
+                pars_mdl,
+                sin_term_i,
+                cos_term_i,
+                sin_term_o,
+                cos_term_o,
+                scaled_v_earth_xyz,
+            )
+
+            return dveff_abs.to_value(UNIT_DVEFF)
+
+        popt, pcov = curve_fit(
+            f=model_dveff_fit,
+            xdata=indep_vars,
+            ydata=self.data.dveff_obs.to_value(UNIT_DVEFF),
+            p0=pars_fit_init,
+            sigma=self.data.dveff_err.to_value(UNIT_DVEFF),
+            absolute_sigma=True,
+        )
+
+        pars_mdl = self.model.pars_fit2mdl(popt)
+
+        self.best_fit = pars_mdl
+
+        return pars_mdl
+
+
+class FitPhys(FitBase):
+    """Fit of physical model with a given dataset."""
+
+    def guess_pars(self, target):
+        return guess_pars_phys(target)
+
+    def get_log_likelihood(self, pars_fit):
+        pars_mdl = self.model.pars_fit2mdl(pars_fit)
+        chi2 = self.get_chi2(pars_mdl)
+        log_likelihood = -0.5 * chi2
+        return log_likelihood
+
+    def get_log_prob(self, pars_fit):
+        log_prior = self.model.get_log_prior(pars_fit, self.priors)
+        if log_prior == -np.inf:
+            log_prob = -np.inf
+        else:
+            log_likelihood = self.get_log_likelihood(pars_fit)
+            log_prob = log_prior + log_likelihood
+        return log_prob
+
+    def optimize(
+        self, pars_mdl_init=None, method="Nelder-Mead", options={"maxiter": 100000}
+    ):
+        if pars_mdl_init is None:
+            pars_mdl_init = self.guess_pars(self.model.target)
+        pars_fit_init = self.model.pars_mdl2fit(pars_mdl_init)
+
+        def get_neg_log_prob(*args):
+            return -self.get_log_prob(*args)
+
+        res = minimize(
+            get_neg_log_prob,
+            pars_fit_init,
+            method=method,
+            options=options,
+        )
+
+        pars_mdl = self.model.pars_fit2mdl(res.x)
+
+        self.best_fit = pars_mdl
+
+        return pars_mdl
 
 
 class MCMC:

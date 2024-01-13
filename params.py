@@ -15,9 +15,7 @@ def guess_pars_phys(target):
     pars_phys = {
         "cosi_p": np.cos(target.i_p_prior_mu),
         "omega_p": target.omega_p_prior_mu,
-        "d_p": target.parallax_prior_mu.to(
-            u.pc, equivalencies=u.parallax()
-        ),
+        "d_p": target.parallax_prior_mu.to(u.kpc, equivalencies=u.parallax()),
         "s": 0.8 * u.dimensionless_unscaled,
         "xi": 62.0 * u.deg,
         "v_lens": 4.0 * u.km / u.s,
