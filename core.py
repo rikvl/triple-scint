@@ -14,7 +14,7 @@ import emcee
 
 from IPython.display import display, Math
 
-from .params import guess_pars_phen, guess_pars_phys
+from .params import guess_pars_phen, guess_pars_phys, pars_phen2comm
 from .utils import get_v_0_e, th2ma, gaussian, get_16_50_84
 from .utils import UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS, PARS_LABELS_UNITS
 
@@ -265,33 +265,6 @@ class ModelBase:
 
         return dveff_signed
 
-    def get_dveff_signed_components_from_t(self, pars, t):
-        (sin_term_i, cos_term_i, sin_term_o, cos_term_o) = self.get_pulsar_terms(t)
-
-        scaled_v_earth_xyz = self.get_earth_terms(t)
-
-        # TODO: The hack below of setting independent variables to zero doesn't
-        # quite work in separating components: it doesn't remove the constant
-        # offset, which also includes a small component from the pulsar orbits
-        # due to the eccentricities
-
-        scaled_v_earth_xyz_zero = np.zeros((3, len(t)))
-
-        dveff_full = self.model_dveff_signed(
-            pars, sin_term_i, cos_term_i, sin_term_o, cos_term_o, scaled_v_earth_xyz
-        )
-        dveff_inner = self.model_dveff_signed(
-            pars, sin_term_i, cos_term_i, 0, 0, scaled_v_earth_xyz_zero
-        )
-        dveff_outer = self.model_dveff_signed(
-            pars, 0, 0, sin_term_o, cos_term_o, scaled_v_earth_xyz_zero
-        )
-        dveff_earth = self.model_dveff_signed(
-            pars, 0, 0, 0, 0, scaled_v_earth_xyz
-        )
-
-        return dveff_full, dveff_inner, dveff_outer, dveff_earth
-
 
 class ModelPhen(ModelBase):
     """Phenomenological model for scaled effective velocity as function of time."""
@@ -368,6 +341,56 @@ class ModelPhen(ModelBase):
         )
 
         return pars_fit
+
+    def get_dveff_signed_components_from_t(self, pars, t):
+        sin_term_i, cos_term_i, sin_term_o, cos_term_o = self.get_pulsar_terms(t)
+        scaled_v_earth_xyz = self.get_earth_terms(t)
+
+        # full model
+        dveff_full = self.model_dveff_signed(
+            pars, sin_term_i, cos_term_i, sin_term_o, cos_term_o, scaled_v_earth_xyz
+        )
+
+        # extract pulsar parameters
+        k_ratio = self.target.k_o / self.target.k_i
+        ecc_i = self.target.ecc_i
+        ecc_o = self.target.ecc_o
+        arg_per_i = self.target.arg_per_i
+        arg_per_o = self.target.arg_per_o
+
+        # get pulsar signal amplitude and phase
+        pars_comm = pars_phen2comm(pars)
+        amp_p = pars_comm["amp_p"]
+        chi_p = pars_comm["chi_p"]
+
+        # only inner pulsar orbit
+        pars_inner = pars.copy()
+        pars_inner["amp_e_ra_cosdec"] = 0 * UNIT_DVEFF
+        pars_inner["amp_e_dec"] = 0 * UNIT_DVEFF
+        pars_inner["dveff_c"] = amp_p * ecc_i * np.sin(arg_per_i - chi_p)
+        dveff_inner = self.model_dveff_signed(
+            pars_inner, sin_term_i, cos_term_i, 0, 0, scaled_v_earth_xyz
+        )
+
+        # only outer pulsar orbit
+        pars_outer = pars.copy()
+        pars_outer["amp_e_ra_cosdec"] = 0 * UNIT_DVEFF
+        pars_outer["amp_e_dec"] = 0 * UNIT_DVEFF
+        pars_outer["dveff_c"] = k_ratio * amp_p * ecc_o * np.sin(arg_per_o - chi_p)
+        dveff_outer = self.model_dveff_signed(
+            pars_outer, 0, 0, sin_term_o, cos_term_o, scaled_v_earth_xyz
+        )
+
+        # only Earth
+        pars_earth = pars.copy()
+        pars_earth["amp_ps"] = 0 * UNIT_DVEFF
+        pars_earth["amp_pc"] = 0 * UNIT_DVEFF
+        pars_earth["dveff_c"] = 0 * UNIT_DVEFF
+        dveff_earth = self.model_dveff_signed(
+            pars_earth, 0, 0, 0, 0, scaled_v_earth_xyz
+        )
+
+        return dveff_full, dveff_inner, dveff_outer, dveff_earth
 
 
 class ModelPhys(ModelBase):
@@ -515,6 +538,31 @@ class ModelPhys(ModelBase):
         )
 
         return pars_fit
+
+    def get_dveff_signed_components_from_t(self, pars, t):
+        (sin_term_i, cos_term_i, sin_term_o, cos_term_o) = self.get_pulsar_terms(t)
+
+        scaled_v_earth_xyz = self.get_earth_terms(t)
+
+        # HACK: The hack below of setting independent variables to zero doesn't
+        # quite work in separating components: it doesn't remove the constant
+        # offset, which also includes a small component from the pulsar orbits
+        # due to the eccentricities
+
+        scaled_v_earth_xyz_zero = np.zeros((3, len(t)))
+
+        dveff_full = self.model_dveff_signed(
+            pars, sin_term_i, cos_term_i, sin_term_o, cos_term_o, scaled_v_earth_xyz
+        )
+        dveff_inner = self.model_dveff_signed(
+            pars, sin_term_i, cos_term_i, 0, 0, scaled_v_earth_xyz_zero
+        )
+        dveff_outer = self.model_dveff_signed(
+            pars, 0, 0, sin_term_o, cos_term_o, scaled_v_earth_xyz_zero
+        )
+        dveff_earth = self.model_dveff_signed(pars, 0, 0, 0, 0, scaled_v_earth_xyz)
+
+        return dveff_full, dveff_inner, dveff_outer, dveff_earth
 
 
 class FitBase:
