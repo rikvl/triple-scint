@@ -360,8 +360,8 @@ def visualize_model_folded(model, data, pars):
     plt.errorbar(ph_earth_obs, dveff_earth_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, (1 * u.yr).to(u.day))
-    plt.title("Earth's orbit", **title_kwargs)
-    plt.xlabel("Day of year (d)")
+    plt.title("Earth's motion")
+    plt.xlabel("day of year")
     plt.ylabel(dveff_signed_lbl)
 
     # create secondary axis
@@ -382,8 +382,8 @@ def visualize_model_folded(model, data, pars):
     plt.errorbar(ph_outer_obs, dveff_outer_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
-    plt.title("Pulsar's outer orbit", **title_kwargs)
-    plt.xlabel("Orbital phase from ascending node")
+    plt.title("pulsar's outer orbit")
+    plt.xlabel("orbital phase from ascending node")
     plt.ylabel("")
 
     # create secondary axis
@@ -404,8 +404,8 @@ def visualize_model_folded(model, data, pars):
     plt.errorbar(ph_inner_obs, dveff_inner_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
-    plt.title("Pulsar's inner orbit", **title_kwargs)
-    plt.xlabel("Orbital phase from ascending node")
+    plt.title("pulsar's inner orbit")
+    plt.xlabel("orbital phase from ascending node")
     plt.ylabel("")
 
     # create secondary axis
