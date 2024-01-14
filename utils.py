@@ -4,6 +4,8 @@ from scipy.special import erf
 
 from astropy import units as u
 
+SIDEREAL_YEAR = 365.256363004 * u.day
+
 UNIT_DVEFF = u.km / u.s / u.kpc**0.5
 UNIT_DTSQRTTAU = u.us**0.5 / u.yr
 
@@ -26,9 +28,9 @@ PARS_LABELS_UNITS = [
 
 
 def get_v_0_e():
-    """Get measure of orbital speed for Earth."""
+    """Get Earth's midrange orbital speed."""
 
-    p_orb_e = 365.256363004 * u.day
+    p_orb_e = SIDEREAL_YEAR
     a_e = 1.0000010178 * u.au
     ecc_e = 0.0167086
 

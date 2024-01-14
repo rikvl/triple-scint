@@ -11,7 +11,7 @@ from astropy.time import Time
 
 from astropy.visualization import quantity_support, time_support
 
-from .utils import PARS_FIT_LABELS, UNIT_DVEFF, UNIT_DTSQRTTAU
+from .utils import SIDEREAL_YEAR, PARS_FIT_LABELS, UNIT_DVEFF, UNIT_DTSQRTTAU
 
 
 obs_style = {
@@ -351,15 +351,15 @@ def visualize_model_folded(model, data, pars):
 
     # calculate day of year
     t_0_earth = Time("2021-01-01T00:00:00.000", format="isot", scale="utc")
-    ph_earth_gen = (t_gen - t_0_earth).to(u.day) % (1 * u.yr)
-    ph_earth_obs = (t_obs - t_0_earth).to(u.day) % (1 * u.yr)
+    ph_earth_gen = (t_gen - t_0_earth).to(u.day) % SIDEREAL_YEAR
+    ph_earth_obs = (t_obs - t_0_earth).to(u.day) % SIDEREAL_YEAR
     idx = np.argsort(ph_earth_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_earth_gen[idx], dveff_earth_gen[idx], **mdl_style)
     plt.errorbar(ph_earth_obs, dveff_earth_res, yerr=data.dveff_err, **obs_style)
 
-    plt.xlim(0, (1 * u.yr).to(u.day))
+    plt.xlim(0, SIDEREAL_YEAR.to(u.day))
     plt.title("Earth's motion")
     plt.xlabel("day of year")
     plt.ylabel(dveff_signed_lbl)
