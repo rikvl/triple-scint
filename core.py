@@ -160,9 +160,6 @@ class Target:
         else:
             raise ValueError(f"Unrecognized ref_orbital {ref_orbital}")
 
-        self.ecc_i = 0
-        self.ecc_o = 0
-
         # parallax prior - Deller
         if ref_parallax == "Deller":
             self.parallax_prior_mu = 0.88 * u.mas
