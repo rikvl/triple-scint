@@ -217,6 +217,8 @@ class Data:
         self.dveff_err_original = data["dveff_err"] * np.sqrt(1000) * UNIT_DVEFF
         self.dveff_err = self.dveff_err_original
 
+        self.tlim = [np.min(self.t_obs.mjd) - 20, np.max(self.t_obs.mjd) + 40]
+
         self._equad = 0.0 * UNIT_DVEFF
 
     @property
@@ -260,11 +262,38 @@ class ModelBase:
 
         scaled_v_earth_xyz = self.get_earth_terms(t)
 
-        dveff_mdl_signed = self.model_dveff_signed(
+        dveff_signed = self.model_dveff_signed(
             pars, sin_term_i, cos_term_i, sin_term_o, cos_term_o, scaled_v_earth_xyz
         )
 
-        return dveff_mdl_signed
+        return dveff_signed
+
+    def get_dveff_signed_components_from_t(self, pars, t):
+        (sin_term_i, cos_term_i, sin_term_o, cos_term_o) = self.get_pulsar_terms(t)
+
+        scaled_v_earth_xyz = self.get_earth_terms(t)
+
+        # TODO: The hack below of setting independent variables to zero doesn't
+        # quite work in separating components: it doesn't remove the constant
+        # offset, which also includes a small component from the pulsar orbits
+        # due to the eccentricities
+
+        scaled_v_earth_xyz_zero = np.zeros((3, len(t)))
+
+        dveff_full = self.model_dveff_signed(
+            pars, sin_term_i, cos_term_i, sin_term_o, cos_term_o, scaled_v_earth_xyz
+        )
+        dveff_inner = self.model_dveff_signed(
+            pars, sin_term_i, cos_term_i, 0, 0, scaled_v_earth_xyz_zero
+        )
+        dveff_outer = self.model_dveff_signed(
+            pars, 0, 0, sin_term_o, cos_term_o, scaled_v_earth_xyz_zero
+        )
+        dveff_earth = self.model_dveff_signed(
+            pars, 0, 0, 0, 0, scaled_v_earth_xyz
+        )
+
+        return dveff_full, dveff_inner, dveff_outer, dveff_earth
 
 
 class ModelPhen(ModelBase):

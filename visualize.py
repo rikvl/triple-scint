@@ -43,10 +43,7 @@ dveff_signed_lbl = (
     f"{dveff_unit}"
 )
 
-dveff_res_lbl = (
-    r"residuals "
-    f"{dveff_unit}"
-)
+dveff_res_lbl = r"residuals " f"{dveff_unit}"
 
 dtsqrttau_unit = r"$\mathrm{ \left( \sqrt{ms} / yr \right) }$"
 
@@ -56,13 +53,11 @@ dtsqrttau_lbl = (
     f"{dtsqrttau_unit}"
 )
 
-dtsqrttau_res_lbl = (
-    r"residual "
-    r"$\partial_t \sqrt{ \tau }$ "
-    f"{dtsqrttau_unit}"
-)
+dtsqrttau_res_lbl = r"residuals " r"$\partial_t \sqrt{ \tau }$ " f"{dtsqrttau_unit}"
 
 title_kwargs = {"loc": "left", "x": 0.01, "y": 1.0, "pad": -14}
+
+axh_style = {"color": "black", "linestyle": "-", "linewidth": 1}
 
 
 def plot_data(data):
@@ -122,7 +117,7 @@ def visualize_model_zoom(model, data, pars):
     # plt.subplots_adjust(wspace=0.1, hspace=0.2)
 
     mdl_alpha = 0.4
-    obs_alpha = 1.0
+    obs_alpha = 1
     col_zoom_lbl = "black"
 
     # compute model at observation times, then find residuals
@@ -145,7 +140,8 @@ def visualize_model_zoom(model, data, pars):
 
     # compute model
     # tlim_long = [np.min(data.t_obs.mjd) - 20, np.max(data.t_obs.mjd) + 40]
-    tlim_long = [59280, 60000]
+    # tlim_long = [59280, 60000]
+    tlim_long = data.tlim
     t_mjd_many = np.arange(tlim_long[0], tlim_long[-1], 0.1)
     t_many = Time(t_mjd_many, format="mjd")
     dveff_mdl_many = model.get_dveff_signed_from_t(pars, t_many)
@@ -309,6 +305,192 @@ def visualize_model_zoom(model, data, pars):
         plt.xlabel(rf"$\mathrm{{MJD}} - {mjd_offset:.0f}$")
 
     plt.tight_layout()
+    plt.show()
+
+
+def visualize_model_folded(model, data, pars):
+    quantity_support()
+    time_support(format="iso")
+
+    t_obs = data.t_obs
+
+    # Compute model components at observation times
+    (
+        dveff_full_mdl,
+        dveff_inner_mdl,
+        dveff_outer_mdl,
+        dveff_earth_mdl,
+    ) = model.get_dveff_signed_components_from_t(pars, data.t_obs)
+
+    dveff_signed_obs = np.sign(dveff_full_mdl) * data.dveff_obs
+
+    # Compute data point residuals plus individual model components
+    dveff_inner_res = dveff_signed_obs - dveff_full_mdl + dveff_inner_mdl
+    dveff_outer_res = dveff_signed_obs - dveff_full_mdl + dveff_outer_mdl
+    dveff_earth_res = dveff_signed_obs - dveff_full_mdl + dveff_earth_mdl
+
+    # Define dense grid of times
+    npoints = 2000
+    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
+    t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
+
+    # Compute model components at dense grid of times
+    (
+        dveff_full_gen,
+        dveff_inner_gen,
+        dveff_outer_gen,
+        dveff_earth_gen,
+    ) = model.get_dveff_signed_components_from_t(pars, t_gen)
+
+    plt.subplots(nrows=1, ncols=3, figsize=(12, 4), sharey=True)
+    plt.subplots_adjust(wspace=0.1)
+
+    # --- Earth's motion ---
+
+    ax1 = plt.subplot(131)
+
+    # calculate day of year
+    t_0_earth = Time("2021-01-01T00:00:00.000", format="isot", scale="utc")
+    ph_earth_gen = (t_gen - t_0_earth).to(u.day) % (1 * u.yr)
+    ph_earth_obs = (t_obs - t_0_earth).to(u.day) % (1 * u.yr)
+    idx = np.argsort(ph_earth_gen)
+
+    plt.axhline(**axh_style)
+    plt.plot(ph_earth_gen[idx], dveff_earth_gen[idx], **mdl_style)
+    plt.errorbar(ph_earth_obs, dveff_earth_res, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(0, (1 * u.yr).to(u.day))
+    plt.title("Earth's orbit", **title_kwargs)
+    plt.xlabel("Day of year (d)")
+    plt.ylabel(dveff_signed_lbl)
+
+    # create secondary axis
+    secax = ax1.secondary_yaxis("right", functions=(dveff2dtsqrttau, dtsqrttau2dveff))
+    secax.set_yticklabels([])
+
+    # --- pulsar's outer orbit ---
+
+    ax2 = plt.subplot(132)
+
+    # calculate phases
+    ph_outer_gen = (t_gen - model.target.t_asc_o) / model.target.p_orb_o % 1
+    ph_outer_obs = (t_obs - model.target.t_asc_o) / model.target.p_orb_o % 1
+    idx = np.argsort(ph_outer_gen)
+
+    plt.axhline(**axh_style)
+    plt.plot(ph_outer_gen[idx], dveff_outer_gen[idx], **mdl_style)
+    plt.errorbar(ph_outer_obs, dveff_outer_res, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(0, 1)
+    plt.title("Pulsar's outer orbit", **title_kwargs)
+    plt.xlabel("Orbital phase from ascending node")
+    plt.ylabel("")
+
+    # create secondary axis
+    secax = ax2.secondary_yaxis("right", functions=(dveff2dtsqrttau, dtsqrttau2dveff))
+    secax.set_yticklabels([])
+
+    # --- pulsar's inner orbit ---
+
+    ax3 = plt.subplot(133)
+
+    # calculate phases
+    ph_inner_gen = (t_gen - model.target.t_asc_i) / model.target.p_orb_i % 1
+    ph_inner_obs = (t_obs - model.target.t_asc_i) / model.target.p_orb_i % 1
+    idx = np.argsort(ph_inner_gen)
+
+    plt.axhline(**axh_style)
+    plt.plot(ph_inner_gen[idx], dveff_inner_gen[idx], **mdl_style)
+    plt.errorbar(ph_inner_obs, dveff_inner_res, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(0, 1)
+    plt.title("Pulsar's inner orbit", **title_kwargs)
+    plt.xlabel("Orbital phase from ascending node")
+    plt.ylabel("")
+
+    # create secondary axis
+    secax = ax3.secondary_yaxis("right", functions=(dveff2dtsqrttau, dtsqrttau2dveff))
+    secax.set_ylabel(dtsqrttau_lbl)
+
+    plt.show()
+
+
+def visualize_model_components(model, data, pars):
+    quantity_support()
+    time_support(format="iso")
+
+    mdl_alpha = 0.4
+
+    # Compute model components at observation times
+    (
+        dveff_full_mdl,
+        dveff_inner_mdl,
+        dveff_outer_mdl,
+        dveff_earth_mdl,
+    ) = model.get_dveff_signed_components_from_t(pars, data.t_obs)
+
+    dveff_signed_obs = np.sign(dveff_full_mdl) * data.dveff_obs
+
+    # Compute data point residuals plus individual model components
+    # dveff_inner_res = dveff_signed_obs - dveff_full_mdl + dveff_inner_mdl
+    dveff_outer_res = dveff_signed_obs - dveff_full_mdl + dveff_outer_mdl
+    dveff_earth_res = dveff_signed_obs - dveff_full_mdl + dveff_earth_mdl
+
+    # Define dense grid of times
+    npoints = 2000
+    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
+    t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
+
+    # Compute model components at dense grid of times
+    (
+        dveff_full_gen,
+        dveff_inner_gen,
+        dveff_outer_gen,
+        dveff_earth_gen,
+    ) = model.get_dveff_signed_components_from_t(pars, t_gen)
+
+    plt.figure(figsize=(12, 9))
+
+    # --- full model, signed ---
+
+    plt.subplot(311)
+
+    plt.axhline(**axh_style)
+    plt.plot(t_gen.mjd, dveff_full_gen, **mdl_style, alpha=mdl_alpha)
+    plt.errorbar(data.t_obs.mjd, dveff_signed_obs, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(data.tlim)
+    plt.xlabel("MJD")
+    plt.ylabel(dveff_signed_lbl)
+
+    ylim0 = plt.gca().get_ylim()
+
+    # --- Earth's motion ---
+
+    plt.subplot(312)
+
+    plt.axhline(**axh_style)
+    plt.plot(t_gen.mjd, dveff_earth_gen, **mdl_style)
+    plt.errorbar(data.t_obs.mjd, dveff_earth_res, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(data.tlim)
+    plt.ylim(ylim0)
+    plt.xlabel("MJD")
+    plt.ylabel(dveff_signed_lbl)
+
+    # --- pulsar's outer orbit ---
+
+    plt.subplot(313)
+
+    plt.axhline(**axh_style)
+    plt.plot(t_gen.mjd, dveff_outer_gen, **mdl_style)
+    plt.errorbar(data.t_obs.mjd, dveff_outer_res, yerr=data.dveff_err, **obs_style)
+
+    plt.xlim(data.tlim)
+    plt.ylim(ylim0)
+    plt.xlabel("MJD")
+    plt.ylabel(dveff_signed_lbl)
+
     plt.show()
 
 
