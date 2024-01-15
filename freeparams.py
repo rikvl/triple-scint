@@ -191,14 +191,7 @@ def pars_phen2phys_d_p(pars_phen, target, d_p, cos_sign):
     # screen velocity
     v_lens = pars_comm2vlens(pars_comm, s, target)
 
-    pars_phys = {
-        "cosi_p": cosi_p.to(u.dimensionless_unscaled),
-        "omega_p": omega_p.to(u.deg),
-        "d_p": d_p.to(u.kpc),
-        "s": s.to(u.dimensionless_unscaled),
-        "xi": xi.to(u.deg),
-        "v_lens": v_lens.to(u.km / u.s),
-    }
+    pars_phys = gather_pars_phys(cosi_p, omega_p, d_p, s, xi, v_lens)
 
     return pars_phys
 
@@ -226,14 +219,7 @@ def pars_phen2phys_cosi_p(pars_phen, target, cosi_p):
     # screen velocity
     v_lens = pars_comm2vlens(pars_comm, s, target)
 
-    pars_phys = {
-        "cosi_p": cosi_p.to(u.dimensionless_unscaled),
-        "omega_p": omega_p.to(u.deg),
-        "d_p": d_p.to(u.kpc),
-        "s": s.to(u.dimensionless_unscaled),
-        "xi": xi.to(u.deg),
-        "v_lens": v_lens.to(u.km / u.s),
-    }
+    pars_phys = gather_pars_phys(cosi_p, omega_p, d_p, s, xi, v_lens)
 
     return pars_phys
 
@@ -260,6 +246,14 @@ def pars_phen2phys_omega_p(pars_phen, target, omega_p):
 
     # screen velocity
     v_lens = pars_comm2vlens(pars_comm, s, target)
+
+    pars_phys = gather_pars_phys(cosi_p, omega_p, d_p, s, xi, v_lens)
+
+    return pars_phys
+
+
+def gather_pars_phys(cosi_p, omega_p, d_p, s, xi, v_lens):
+    """Gather physical parameters into dict with standard units."""
 
     pars_phys = {
         "cosi_p": cosi_p.to(u.dimensionless_unscaled),
