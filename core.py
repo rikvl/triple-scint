@@ -594,7 +594,7 @@ class FitBase:
         self.nfree = self.ndim - self.nfixed
         self.ndof = len(self.data.t_obs) - self.nfree
 
-    def get_chi2(self, pars_mdl):
+    def get_residuals(self, pars_mdl):
         dveff_mdl = self.model.model_dveff_abs(
             pars_mdl,
             self.sin_term_i_obs,
@@ -603,7 +603,14 @@ class FitBase:
             self.cos_term_o_obs,
             self.scaled_v_earth_xyz_obs,
         )
-        chi2 = np.sum(((self.data.dveff_obs - dveff_mdl) / self.data.dveff_err) ** 2)
+
+        dveff_res = self.data.dveff_obs - dveff_mdl
+
+        return dveff_res
+
+    def get_chi2(self, pars_mdl):
+        dveff_res = self.get_residuals(pars_mdl)
+        chi2 = np.sum((dveff_res / self.data.dveff_err) ** 2)
         return chi2
 
     def print_result(self, pars_mdl):
