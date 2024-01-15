@@ -230,6 +230,9 @@ def visualize_model_zoom(model, data, pars):
 
     iax_upper = 10
     for izoom, t_zoom in enumerate(t_zoom_list):
+        if t_zoom < tlim_long[0] or t_zoom > tlim_long[1]:
+            continue
+
         # generate letter of panel
         letter = chr(ord("`") + izoom + 3)
 
