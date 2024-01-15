@@ -204,14 +204,16 @@ class Observatory:
 class Data:
     """Scaled effective velocity data."""
 
-    def __init__(self, datafilename):
+    def __init__(self, datafilename, dveff_unit=None):
+        unit_dveff_file = dveff_unit or u.km / u.s / u.pc**0.5
+        corr_unit_dveff = (unit_dveff_file / UNIT_DVEFF).to(u.dimensionless_unscaled)
         self.datafilename = datafilename
 
         data = np.load(datafilename)
 
         self.t_obs = Time(data["t_mjd"], format="mjd", scale="utc")
-        self.dveff_obs = data["dveff_obs"] * np.sqrt(1000) * UNIT_DVEFF
-        self.dveff_err_original = data["dveff_err"] * np.sqrt(1000) * UNIT_DVEFF
+        self.dveff_obs = data["dveff_obs"] * corr_unit_dveff * UNIT_DVEFF
+        self.dveff_err_original = data["dveff_err"] * corr_unit_dveff * UNIT_DVEFF
         self.dveff_err = self.dveff_err_original
 
         self.tlim = [np.min(self.t_obs.mjd) - 20, np.max(self.t_obs.mjd) + 40]
