@@ -7,6 +7,7 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, SkyOffsetFrame, EarthLocation
 
 from scipy.optimize import curve_fit, minimize
+from scipy.stats import kstest
 
 from kepler import kepler as solve_kepler
 
@@ -218,7 +219,19 @@ class Data:
 
         self.tlim = [np.min(self.t_obs.mjd) - 20, np.max(self.t_obs.mjd) + 40]
 
-        self._equad = 0.0 * UNIT_DVEFF
+        self._efac = 1
+        self._equad = 0 * UNIT_DVEFF
+
+    @property
+    def efac(self):
+        return self._efac
+
+    @efac.setter
+    def efac(self, new_efac):
+        self._efac = new_efac
+        self.dveff_err = np.sqrt(
+            (self._efac * self.dveff_err_original) ** 2 + self._equad**2
+        )
 
     @property
     def equad(self):
@@ -227,7 +240,9 @@ class Data:
     @equad.setter
     def equad(self, new_equad):
         self._equad = new_equad
-        self.dveff_err = np.sqrt(self.dveff_err_original**2 + new_equad**2)
+        self.dveff_err = np.sqrt(
+            (self._efac * self.dveff_err_original) ** 2 + self._equad**2
+        )
 
 
 class ModelBase:
@@ -625,6 +640,7 @@ class FitBase:
 
         print(f"\nchi2red  {self.get_chi2(pars_mdl)/self.ndof:8.2f}")
 
+        print(f"\nefac     {self.data.efac:8.2f}")
         print(f"\nequad    {self.data.equad:8.2f}")
 
     def find_equad(self, pars_mdl_init=None, init_equad=None, tol=1e-4, maxiter=100):
@@ -652,6 +668,53 @@ class FitBase:
             new_equad = cur_equad * chi2red
             chi2diff = np.abs(chi2red - 1)
             niter += 1
+
+    def corr_errors(self, ef_grid=None, eq_grid=None):
+        """Try grid of EFAC and EQUAD."""
+
+        # create grid of EFAC and EQUAD values
+        ef_grid = ef_grid if ef_grid is not None else np.linspace(0.5, 2.5, 21)
+        eq_grid = eq_grid if eq_grid is not None else (np.linspace(0, 3, 31) * UNIT_DVEFF)
+
+        nef = len(ef_grid)
+        neq = len(eq_grid)
+
+        ks_grid = np.zeros((nef, neq))
+
+        print("efac, percent done")
+
+        for ief, ef in enumerate(ef_grid):
+            self.data.efac = ef
+
+            print(f"{ef:4.1f}, {ief / nef * 100:4.1f}")
+
+            for ieq, eq in enumerate(eq_grid):
+                self.data.equad = eq
+
+                # fit model with new EFAC and EQUAD values
+                pars_mdl = self.optimize(pars_mdl_init=None)
+
+                # test if scaled residuals follow normal distribution using KS test
+                dveff_res = self.get_residuals(pars_mdl)
+                scaled_errors = dveff_res / self.data.dveff_err
+                test_dist = scaled_errors.to_value(u.dimensionless_unscaled)
+                ksres = kstest(test_dist, "norm")
+
+                ks_grid[ief, ieq] = ksres.statistic
+
+        print("     100.0\n")
+
+        # find minimum KS statistic
+        ind_min_ks = np.unravel_index(np.argmin(ks_grid, axis=None), ks_grid.shape)
+        ef_opt = ef_grid[ind_min_ks[0]]
+        eq_opt = eq_grid[ind_min_ks[1]]
+
+        self.data.efac = ef_opt
+        self.data.equad = eq_opt
+
+        pars_mdl = self.optimize(pars_mdl_init=None)
+
+        return pars_mdl
 
 
 class FitPhen(FitBase):
@@ -718,7 +781,7 @@ class FitPhen(FitBase):
 
         pars_mdl = self.model.pars_fit2mdl(popt)
 
-        self.best_fit = pars_mdl
+        self.pars_opt = pars_mdl
 
         return pars_mdl
 
@@ -763,7 +826,7 @@ class FitPhys(FitBase):
 
         pars_mdl = self.model.pars_fit2mdl(res.x)
 
-        self.best_fit = pars_mdl
+        self.pars_opt = pars_mdl
 
         return pars_mdl
 
