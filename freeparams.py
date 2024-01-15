@@ -116,6 +116,22 @@ def pars_phen2comm(pars_phen):
     return pars_comm
 
 
+def pars_cosip2dp(pars_comm, cosi_p, target):
+    """Convert cos(i_p) to d_p using intermediate parameters."""
+
+    k_p = target.k_i
+
+    d_eff = pars_comm["d_eff"]
+    amp_p = pars_comm["amp_p"]
+    chi_p = pars_comm["chi_p"]
+
+    sini_p = np.sqrt(1 - cosi_p**2)
+    b_p = np.sqrt((1 - sini_p**2) / (1 - sini_p**2 * np.cos(chi_p) ** 2))
+    d_p = np.sqrt(d_eff) / amp_p * k_p / sini_p * b_p
+
+    return d_p
+
+
 def pars_comm2vlens(pars_comm, s, target):
     """Extract lens velocity from intermediate parameters."""
 
@@ -191,13 +207,10 @@ def pars_phen2phys_cosi_p(pars_phen, target, cosi_p):
     """Convert phenomenological model parameters to physical parameters
     when cosine of pulsar's orbital inclination is known."""
 
-    k_p = target.k_i
-
     pars_comm = pars_phen2comm(pars_phen)
 
     d_eff = pars_comm["d_eff"]
     xi = pars_comm["xi"]
-    amp_p = pars_comm["amp_p"]
     chi_p = pars_comm["chi_p"]
 
     # pulsar longitude of ascending node
@@ -205,9 +218,42 @@ def pars_phen2phys_cosi_p(pars_phen, target, cosi_p):
     omega_p = (xi - delta_omega_p) % (360 * u.deg)
 
     # pulsar distance
-    sini_p = np.sqrt(1 - cosi_p**2)
-    b_p = np.sqrt((1 - sini_p**2) / (1 - sini_p**2 * np.cos(chi_p) ** 2))
-    d_p = np.sqrt(d_eff) / amp_p * k_p / sini_p * b_p
+    d_p = pars_cosip2dp(pars_comm, cosi_p, target)
+
+    # fractional pulsar-screen distance
+    s = d_p / (d_p + d_eff)
+
+    # screen velocity
+    v_lens = pars_comm2vlens(pars_comm, s, target)
+
+    pars_phys = {
+        "cosi_p": cosi_p.to(u.dimensionless_unscaled),
+        "omega_p": omega_p.to(u.deg),
+        "d_p": d_p.to(u.kpc),
+        "s": s.to(u.dimensionless_unscaled),
+        "xi": xi.to(u.deg),
+        "v_lens": v_lens.to(u.km / u.s),
+    }
+
+    return pars_phys
+
+
+def pars_phen2phys_omega_p(pars_phen, target, omega_p):
+    """Convert phenomenological model parameters to physical parameters
+    when cosine of pulsar's orbital inclination is known."""
+
+    pars_comm = pars_phen2comm(pars_phen)
+
+    d_eff = pars_comm["d_eff"]
+    xi = pars_comm["xi"]
+    chi_p = pars_comm["chi_p"]
+
+    # cosine of pulsar's orbital inclination
+    delta_omega_p = xi - omega_p
+    cosi_p = np.tan(chi_p) / np.tan(delta_omega_p)
+
+    # pulsar distance
+    d_p = pars_cosip2dp(pars_comm, cosi_p, target)
 
     # fractional pulsar-screen distance
     s = d_p / (d_p + d_eff)
