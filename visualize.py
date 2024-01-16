@@ -21,43 +21,37 @@ obs_style = {
     "markerfacecolor": "none",
 }
 
-mdl_style = {"linestyle": "-", "linewidth": 2, "color": "C0"}
-
 fail_style = {
     "linestyle": "none",
     "color": "grey",
     "marker": "o",
 }
 
-dveff_unit = r"$\mathrm{ \left( \dfrac{ km/s }{ \sqrt{ kpc } } \right) }$"
+mdl_style = {"linestyle": "-", "linewidth": 2, "color": "C0"}
 
-dveff_lbl = (
-    # r"scaled effective velocity "
-    r"$\dfrac{ | v_\mathrm{eff,\!\!\parallel} | }{ \sqrt{ d_\mathrm{eff} } }$ "
-    f"{dveff_unit}"
-)
-
-dveff_signed_lbl = (
-    # r"scaled effective velocity "
-    r"$\dfrac{ v_\mathrm{eff,\!\!\parallel} }{ \sqrt{ d_\mathrm{eff} } }$ "
-    f"{dveff_unit}"
-)
-
-dveff_res_lbl = r"residuals " f"{dveff_unit}"
-
-dtsqrttau_unit = r"$\mathrm{ \left( \sqrt{ms} / yr \right) }$"
-
-dtsqrttau_lbl = (
-    # r"effective drift rate "
-    r"$\partial_t \sqrt{ \tau }$ "
-    f"{dtsqrttau_unit}"
-)
-
-dtsqrttau_res_lbl = r"residuals " r"$\partial_t \sqrt{ \tau }$ " f"{dtsqrttau_unit}"
+axh_style = {"linestyle": "-", "linewidth": 1, "color": "black"}
 
 title_kwargs = {"loc": "left", "x": 0.01, "y": 1.0, "pad": -14}
 
-axh_style = {"color": "black", "linestyle": "-", "linewidth": 1}
+dveff_name = r"scaled effective velocity"
+dveff_symb_normed = (
+    r"$\dfrac{ | v_\mathrm{eff,\!\!\parallel} | }{ \sqrt{ d_\mathrm{eff} } }$"
+)
+dveff_symb_signed = (
+    r"$\dfrac{ v_\mathrm{eff,\!\!\parallel} }{ \sqrt{ d_\mathrm{eff} } }$"
+)
+dveff_unit = r"$\mathrm{ \left( \dfrac{ km/s }{ \sqrt{ kpc } } \right) }$"
+
+dveff_normed_lbl = f"{dveff_symb_normed}  {dveff_unit}"
+dveff_signed_lbl = f"{dveff_symb_signed}  {dveff_unit}"
+dveff_res_lbl = f"residual  {dveff_symb_normed}  {dveff_unit}"
+
+dtsqrttau_name = r"effective drift rate"
+dtsqrttau_symb = r"$\partial_t \sqrt{ \tau }$"
+dtsqrttau_unit = r"$\mathrm{ \left( \sqrt{ms} / yr \right) }$"
+
+dtsqrttau_lbl = f"{dtsqrttau_symb}  {dtsqrttau_unit}"
+dtsqrttau_res_lbl = f"residual  {dtsqrttau_symb}  {dtsqrttau_unit}"
 
 
 def plot_data(data):
@@ -70,7 +64,7 @@ def plot_data(data):
     plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
 
     plt.xlabel("MJD")
-    plt.ylabel(dveff_lbl)
+    plt.ylabel(dveff_normed_lbl)
 
     ylim = (0, ax0.get_ylim()[1])
     plt.ylim(ylim)
@@ -91,7 +85,7 @@ def plot_data(data):
         plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
 
         if isubplot == 6:
-            plt.ylabel(dveff_lbl)
+            plt.ylabel(dveff_normed_lbl)
         else:
             plt.ylabel("")
             ax.set_yticklabels([])
@@ -179,7 +173,7 @@ def visualize_model_zoom(model, data, pars):
     plt.xlim(tlim_long)
     plt.title("(a)   full model", **title_kwargs)
     plt.xlabel("")
-    plt.ylabel(dveff_lbl)
+    plt.ylabel(dveff_normed_lbl)
 
     # save ylims
     ylim1 = (0, ax1.get_ylim()[1] * 1.1)
@@ -272,7 +266,7 @@ def visualize_model_zoom(model, data, pars):
 
         # set vertical axis labels on left
         if iax_lower % 5 == 1:
-            plt.ylabel(dveff_lbl)
+            plt.ylabel(dveff_normed_lbl)
         else:
             plt.ylabel("")
             ax3.set_yticklabels([])
