@@ -265,3 +265,28 @@ def gather_pars_phys(cosi_p, omega_p, d_p, s, xi, v_lens):
     }
 
     return pars_phys
+
+
+def pars_phys2pres(pars_phys):
+    """Convert physical parameters to results-presenting parameters,"""
+
+    cosi_p = pars_phys["cosi_p"]
+    omega_p = pars_phys["omega_p"]
+    d_p = pars_phys["d_p"]
+    s = pars_phys["s"]
+    xi = pars_phys["xi"]
+    v_lens = pars_phys["v_lens"]
+
+    i_p = np.arccos(cosi_p)
+    d_s = (1 - s) * d_p
+
+    pars_pres = {
+        "i_p": i_p.to(u.deg),
+        "omega_p": omega_p.to(u.deg),
+        "d_p": d_p.to(u.kpc),
+        "d_s": d_s.to(u.kpc),
+        "xi": xi.to(u.deg),
+        "v_lens": v_lens.to(u.km / u.s),
+    }
+
+    return pars_pres
