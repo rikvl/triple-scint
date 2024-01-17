@@ -579,12 +579,12 @@ def plot_chains(mcmc):
     axes[-1].set_xlabel("step number")
 
 
-def plot_corner(samp, sel=True, ranges=None, truths=None):
+def plot_corner(samp, ranges=None, truths=None):
     """Make corner plot."""
 
     figsize_inches = (9.5, 9.5)
 
-    contour2d_sigmas = np.array([1., 2.])
+    contour2d_sigmas = np.array([1.0, 2.0])
     contour2d_levels = 1.0 - np.exp(-0.5 * contour2d_sigmas**2)
 
     corner_kwargs = {
@@ -595,10 +595,8 @@ def plot_corner(samp, sel=True, ranges=None, truths=None):
         "labelpad": 0.1,
     }
 
-    samp_dict = samp.samp_dict_sel if sel else samp.samp_dict_all
-
     samp_array = np.stack(
-        [dist.distribution.value for dist in samp_dict.values()], axis=1
+        [dist.distribution.value for dist in samp.samp_dict.values()], axis=1
     )
 
     labels = []
@@ -611,7 +609,9 @@ def plot_corner(samp, sel=True, ranges=None, truths=None):
     # truths = samp.truths if plot_truths else None
 
     with plt.rc_context({"axes.formatter.useoffset": False}):
-        fig = corner.corner(samp_array, labels=labels, range=ranges, truths=truths, **corner_kwargs)
+        fig = corner.corner(
+            samp_array, labels=labels, range=ranges, truths=truths, **corner_kwargs
+        )
 
         # overplot_linear(fig, upars_harc, **linear_style)
 

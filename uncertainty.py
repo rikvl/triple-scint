@@ -13,10 +13,9 @@ from .utils import UNIT_DVEFF, tex_uncertainties
 class SampleBase:
     """Monte Carlo sample."""
 
-    def display_samp_quantiles(self, sel=True):
-        samp_dict = self.samp_dict_sel if sel else self.samp_dict_all
+    def display_samp_quantiles(self):
         txt_all = ""
-        for par, samp in samp_dict.items():
+        for par, samp in self.samp_dict.items():
             result = tex_uncertainties(samp.distribution.value)
             txt = (
                 f"{self.pardict[par].symbol} &= {result} "
@@ -34,15 +33,11 @@ class SamplePhen(SampleBase):
     npar = 5
     pardict = pardict_phen
 
-    def __init__(self, fit, sol_sign_choice=1, nmc=40000):
+    def __init__(self, fit, nmc=40000):
         self.nmc = nmc
         self.target = fit.model.target
 
         np.random.seed(654321)
-
-        rnd_sign = np.random.randint(low=0, high=2, size=nmc) * 2 - 1
-        self.sol_sign = unc.Distribution(rnd_sign)
-        self.idx_sol_sign_choice = self.sol_sign.distribution == sol_sign_choice
 
         # generate samples of the correlated phenomenological parameters
         samp_init = np.random.multivariate_normal(
@@ -50,23 +45,18 @@ class SamplePhen(SampleBase):
         )
 
         # separate phenomenological parameters
-        amp_e_ra_cosdec = self.sol_sign * unc.Distribution(samp_init[:, 0] * UNIT_DVEFF)
-        amp_e_dec = self.sol_sign * unc.Distribution(samp_init[:, 1] * UNIT_DVEFF)
-        amp_ps = self.sol_sign * unc.Distribution(samp_init[:, 2] * UNIT_DVEFF)
-        amp_pc = self.sol_sign * unc.Distribution(samp_init[:, 3] * UNIT_DVEFF)
-        dveff_c = self.sol_sign * unc.Distribution(samp_init[:, 4] * UNIT_DVEFF)
+        amp_e_ra_cosdec = unc.Distribution(samp_init[:, 0] * UNIT_DVEFF)
+        amp_e_dec = unc.Distribution(samp_init[:, 1] * UNIT_DVEFF)
+        amp_ps = unc.Distribution(samp_init[:, 2] * UNIT_DVEFF)
+        amp_pc = unc.Distribution(samp_init[:, 3] * UNIT_DVEFF)
+        dveff_c = unc.Distribution(samp_init[:, 4] * UNIT_DVEFF)
 
-        self.samp_dict_all = {
+        self.samp_dict = {
             "amp_e_ra_cosdec": amp_e_ra_cosdec.to(UNIT_DVEFF),
             "amp_e_dec": amp_e_dec.to(UNIT_DVEFF),
             "amp_ps": amp_ps.to(UNIT_DVEFF),
             "amp_pc": amp_pc.to(UNIT_DVEFF),
             "dveff_c": dveff_c.to(UNIT_DVEFF),
-        }
-
-        self.samp_dict_sel = {
-            par: unc.Distribution(samp.distribution[self.idx_sol_sign_choice])
-            for par, samp in self.samp_dict_all.items()
         }
 
 
@@ -85,7 +75,6 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
-        self.idx_sol_sign_choice = phen.idx_sol_sign_choice
 
         i_p_mu = phen.target.i_p_prior_mu
         i_p_sig = phen.target.i_p_prior_sig
@@ -107,16 +96,9 @@ class SamplePhys(SampleBase):
         samp_cosi_p = np.cos(samp_i_p)
 
         # convert phenomenological parameters to physical parameters
-        self.samp_dict_all = pars_phen2phys_cosi_p(
-            phen.samp_dict_all, self.target, samp_cosi_p
-        )
+        self.samp_dict = pars_phen2phys_cosi_p(phen.samp_dict, self.target, samp_cosi_p)
 
-        self.samp_dict_sel = {
-            par: unc.Distribution(samp.distribution[self.idx_sol_sign_choice])
-            for par, samp in self.samp_dict_all.items()
-        }
-
-    def from_phen_and_parallax(self, phen, cos_sign_choice=-1):
+    def from_phen_and_parallax(self, phen, cos_sign=None):
         """Create sample in physical parameters from SamplePhen and parallax.
 
         Propagate uncertainties from phenomenological model parameters to
@@ -125,33 +107,34 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
-        self.idx_sol_sign_choice = phen.idx_sol_sign_choice
+
+        # pick orientation of orbit
+        cos_sign = cos_sign or np.sign(np.cos(phen.target.i_p_prior_mu))
+        self.cos_sign = cos_sign
 
         parallax_mu = phen.target.parallax_prior_mu
         parallax_sig = phen.target.parallax_prior_sig
 
+        # generate samples according to prior
         parallax_iter = np.random.normal(size=self.nmc) * parallax_sig + parallax_mu
 
+        # replace any negative samples
         while np.any(parallax_iter <= 0):
             idx_neg = np.where(parallax_iter <= 0)
-            parallax_replace = np.random.normal(size=len(idx_neg[0])) * parallax_sig + parallax_mu
+            parallax_replace = (
+                np.random.normal(size=len(idx_neg[0])) * parallax_sig + parallax_mu
+            )
             parallax_iter[idx_neg] = parallax_replace
 
         samp_parallax = unc.Distribution(parallax_iter)
 
+        # convert to parallax of distance
         samp_d_p = samp_parallax.to(u.kpc, equivalencies=u.parallax())
 
-        rnd_sign = np.random.randint(low=0, high=2, size=self.nmc) * 2 - 1
-        cos_sign = unc.Distribution(rnd_sign)
-
+        # convert phenomenological parameters to physical parameters
         self.samp_dict = pars_phen2phys_d_p(
-            phen.samp_dict, self.target, samp_d_p, cos_sign
+            phen.samp_dict, self.target, samp_d_p, self.cos_sign
         )
-
-        self.samp_dict_sel = {
-            par: unc.Distribution(samp.distribution[self.idx_sol_sign_choice])
-            for par, samp in self.samp_dict_all.items()
-        }
 
 
 class SamplePres(SampleBase):
@@ -165,11 +148,5 @@ class SamplePres(SampleBase):
 
         self.nmc = phys.nmc
         self.target = phys.target
-        self.idx_sol_sign_choice = phys.idx_sol_sign_choice
 
-        self.samp_dict_all = pars_phys2pres(phys.samp_dict_all)
-
-        self.samp_dict_sel = {
-            par: unc.Distribution(samp.distribution[self.idx_sol_sign_choice])
-            for par, samp in self.samp_dict_all.items()
-        }
+        self.samp_dict = pars_phys2pres(phys.samp_dict)
