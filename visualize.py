@@ -21,7 +21,7 @@ obs_style = {
     "markerfacecolor": "none",
 }
 
-fail_style = {
+dud_style = {
     "linestyle": "none",
     "color": "grey",
     "marker": "o",
@@ -119,16 +119,7 @@ def visualize_model_zoom(model, data, pars):
     dveff_res = data.dveff_obs - dveff_mdl
 
     # compute model at failed observation times
-    t_fail_mjd = [
-        59297.03092491187,
-        59426.40080007567,
-        59434.73706297613,
-        59464.657160493385,
-        59797.675009191335,
-        59943.94425367851,
-    ]
-    t_fail = Time(t_fail_mjd, format="mjd")
-    dveff_mdl_fail = np.abs(model.get_dveff_signed_from_t(pars, t_fail))
+    dveff_mdl_dud = np.abs(model.get_dveff_signed_from_t(pars, data.t_dud))
 
     # --- full time series ---
 
@@ -154,7 +145,7 @@ def visualize_model_zoom(model, data, pars):
         **obs_style,
         alpha=obs_alpha,
     )
-    plt.plot(t_fail.mjd, dveff_mdl_fail, **fail_style)
+    plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
 
     tick_t_iso = [
         "2021-04-01",
@@ -284,7 +275,7 @@ def visualize_model_zoom(model, data, pars):
 
         plt.plot(t_zoom.mjd, dveff_mdl_zoom, **mdl_style)
         plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
-        plt.plot(t_fail.mjd, dveff_mdl_fail, **fail_style)
+        plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
         plt.xlim(tlim_zoom)
 
         # panel title

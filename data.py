@@ -7,10 +7,20 @@ from astropy.time import Time
 from .utils import UNIT_DVEFF
 
 
+t_dud_mjd = [
+    59297.03092491187,
+    59426.40080007567,
+    59434.73706297613,
+    59464.657160493385,
+    59797.675009191335,
+    59943.94425367851,
+]
+
+
 class Data:
     """Scaled effective velocity data."""
 
-    def __init__(self, datafilename, dveff_unit=None):
+    def __init__(self, datafilename, t_dud_mjd=t_dud_mjd, dveff_unit=None):
         unit_dveff_file = dveff_unit or u.km / u.s / u.pc**0.5
         corr_unit_dveff = (unit_dveff_file / UNIT_DVEFF).to(u.dimensionless_unscaled)
         self.datafilename = datafilename
@@ -21,6 +31,8 @@ class Data:
         self.dveff_obs = data["dveff_obs"] * corr_unit_dveff * UNIT_DVEFF
         self.dveff_err_original = data["dveff_err"] * corr_unit_dveff * UNIT_DVEFF
         self.dveff_err = self.dveff_err_original
+
+        self.t_dud = Time(t_dud_mjd, format="mjd")
 
         self.tlim = [np.min(self.t_obs.mjd) - 20, np.max(self.t_obs.mjd) + 40]
 
