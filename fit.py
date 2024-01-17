@@ -203,6 +203,7 @@ class FitPhen(FitBase):
 
             return dveff_abs.to_value(UNIT_DVEFF)
 
+        # find optimal phenomenological parameters
         popt, pcov = curve_fit(
             f=model_dveff_fit,
             xdata=indep_vars,
@@ -212,8 +213,22 @@ class FitPhen(FitBase):
             absolute_sigma=True,
         )
 
+        # find sign for which convention 0 <= xi < 180 deg holds, which is equal
+        # to the sign of sin( xi ), which is equal to the sign of amp_e_ra_cosdec,
+        # which is the index 0 entry in the vector of parameters
+        self.sol_sign = np.sign(popt[0])
+
+        # correct colution to have correct sign
+        popt *= self.sol_sign
+
+        # store curve_fit solution and covariance matrix
+        self.curve_fit_popt = popt
+        self.curve_fit_pcov = pcov
+
+        # convert to dict of astropy quantities
         pars_mdl = self.model.pars_fit2mdl(popt)
 
+        # store optimum solution
         self.pars_opt = pars_mdl
 
         return pars_mdl
