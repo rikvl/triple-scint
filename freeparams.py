@@ -1,8 +1,68 @@
+from collections import namedtuple
+
 import numpy as np
 
 from astropy import units as u
 
 from .utils import get_v_0_e, UNIT_DVEFF
+
+unit_str_dveff = r"\mathrm{ km/s / \sqrt{kpc} }"
+
+Param = namedtuple("ParString", ["symbol", "unit_str", "unit_ap"])
+
+# phenomenological parameters
+par_amp_e_ra_cosdec = Param(r"A_{\oplus,\alpha\ast}", unit_str_dveff, UNIT_DVEFF)
+par_amp_e_dec = Param(r"A_{\oplus,\delta}", unit_str_dveff, UNIT_DVEFF)
+par_amp_ps = Param(r"A_{p,s}", unit_str_dveff, UNIT_DVEFF)
+par_amp_pc = Param(r"A_{p,s}", unit_str_dveff, UNIT_DVEFF)
+par_dveff_c = Param(r"C", unit_str_dveff, UNIT_DVEFF)
+pardict_phen = {
+    "amp_e_ra_cosdec": par_amp_e_ra_cosdec,
+    "amp_e_dec": par_amp_e_dec,
+    "amp_ps": par_amp_ps,
+    "amp_pc": par_amp_pc,
+    "dveff_c": par_dveff_c,
+}
+
+# physical parameters
+par_cosi_p = Param(r"\cos( i_\mathrm{p} )", r"", u.dimensionless_unscaled)
+par_omega_p = Param(r"\Omega_\mathrm{p}", r"\mathrm{deg}", u.deg)
+par_d_p = Param(r"d_\mathrm{p}", r"\mathrm{kpc}", u.kpc)
+par_s = Param(r"s", r"", u.dimensionless_unscaled)
+par_xi = Param(r"\xi", r"\mathrm{deg}", u.deg)
+par_v_lens = Param(r"v_\mathrm{lens,\parallel}", r"\mathrm{km/s}", u.km / u.s)
+pardict_phys = {
+    "cosi_p": par_cosi_p,
+    "omega_p": par_omega_p,
+    "d_p": par_d_p,
+    "s": par_s,
+    "xi": par_xi,
+    "v_lens": par_v_lens,
+}
+
+# intermediate / common parameters
+par_d_eff = Param(r"d_\mathrm{eff}", r"\mathrm{kpc}", u.kpc)
+par_amp_p = Param(r"A_{p}", unit_str_dveff, UNIT_DVEFF)
+par_chi_p = Param(r"\chi_\mathrm{p}", r"\mathrm{deg}", u.deg)
+pardict_comm = {
+    "d_eff": par_d_eff,
+    "xi": par_xi,
+    "amp_p": par_amp_p,
+    "chi_p": par_chi_p,
+    "dveff_c": par_dveff_c,
+}
+
+# results-presenting parameters
+par_i_p = Param(r"i_\mathrm{p}", r"\mathrm{deg}", u.deg)
+par_d_s = Param(r"d_\mathrm{s}", r"\mathrm{kpc}", u.kpc)
+pardict_pres = {
+    "i_p": par_i_p,
+    "omega_p": par_omega_p,
+    "d_p": par_d_p,
+    "d_s": par_d_s,
+    "xi": par_xi,
+    "v_lens": par_v_lens,
+}
 
 
 def guess_pars_phen(target):
