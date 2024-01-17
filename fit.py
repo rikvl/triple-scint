@@ -12,7 +12,7 @@ import emcee
 from IPython.display import display, Math
 
 from .freeparams import guess_pars_phen, guess_pars_phys
-from .utils import get_16_50_84, UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS
+from .utils import tex_uncertainties, UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS
 
 
 class FitBase:
@@ -373,11 +373,9 @@ class MCMC:
 
     def print_result(self):
         for i in range(self.ndim):
-            mcmc = np.percentile(self.scaled_samples[:, i], get_16_50_84())
-            q = np.diff(mcmc)
+            result = tex_uncertainties(self.scaled_samples[:, i])
             txt = (
-                f"{PARS_MDL_LABELS[i][1:-1]} ="
-                f"{mcmc[1]:.3f}_{{ -{q[0]:.3f} }}^{{ +{q[1]:.3f} }}"
+                f"{PARS_MDL_LABELS[i][1:-1]} = {result} "
                 f"\\; \\mathrm{{ {PARS_UNIT_STRS[i][2:-1]} }}"
             )
             display(Math(txt))

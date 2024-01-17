@@ -60,3 +60,21 @@ def get_16_50_84(sigma_level=1):
     quantiles = 0.5 + np.array([-1, 0, 1]) * erf(sigma_level / np.sqrt(2)) / 2
     percentiles = quantiles * 100
     return percentiles
+
+
+def get_format(floats):
+    characteristic = np.floor(np.log10(floats)).astype(int)
+    decimals = np.maximum(-characteristic + 1, 0).min()
+    fmt = f"{{0:.{decimals}f}}".format
+    return fmt
+
+
+def tex_uncertainties(samp):
+    q_16, q_50, q_84 = np.percentile(samp, get_16_50_84())
+    q_m, q_p = q_50 - q_16, q_84 - q_50
+    fmt = get_format([q_m, q_p])
+    if fmt(q_m) == fmt(q_p):
+        txt = f"{fmt(q_50)} \\pm {fmt(q_m)}"
+    else:
+        txt = f"{fmt(q_50)}_{{-{fmt(q_m)}}}^{{+{fmt(q_p)}}}"
+    return txt
