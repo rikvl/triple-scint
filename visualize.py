@@ -25,6 +25,7 @@ dud_style = {
     "linestyle": "none",
     "color": "grey",
     "marker": "o",
+    "alpha": 0.75,
 }
 
 mdl_style = {"linestyle": "-", "linewidth": 2, "color": "C0"}
@@ -296,11 +297,16 @@ def visualize_model_zoom(model, data, pars):
     plt.show()
 
 
-def visualize_model_folded(model, data, pars):
+def visualize_model_folded(model, data, pars, npoints=2000):
     quantity_support()
     time_support(format="iso")
 
     t_obs = data.t_obs
+    t_dud = data.t_dud
+
+    # Define dense grid of times
+    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
+    t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
 
     # Compute model components at observation times
     (
@@ -308,7 +314,7 @@ def visualize_model_folded(model, data, pars):
         dveff_inner_mdl,
         dveff_outer_mdl,
         dveff_earth_mdl,
-    ) = model.get_dveff_signed_components_from_t(pars, data.t_obs)
+    ) = model.get_dveff_signed_components_from_t(pars, t_obs)
 
     dveff_signed_obs = np.sign(dveff_full_mdl) * data.dveff_obs
 
@@ -317,10 +323,13 @@ def visualize_model_folded(model, data, pars):
     dveff_outer_res = dveff_signed_obs - dveff_full_mdl + dveff_outer_mdl
     dveff_earth_res = dveff_signed_obs - dveff_full_mdl + dveff_earth_mdl
 
-    # Define dense grid of times
-    npoints = 2000
-    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
-    t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
+    # Compute model components at times of failed observations
+    (
+        dveff_full_dud,
+        dveff_inner_dud,
+        dveff_outer_dud,
+        dveff_earth_dud,
+    ) = model.get_dveff_signed_components_from_t(pars, t_dud)
 
     # Compute model components at dense grid of times
     (
@@ -339,12 +348,14 @@ def visualize_model_folded(model, data, pars):
 
     # calculate day of year
     t_0_earth = Time("2021-01-01T00:00:00.000", format="isot", scale="utc")
-    ph_earth_gen = (t_gen - t_0_earth).to(u.day) % SIDEREAL_YEAR
     ph_earth_obs = (t_obs - t_0_earth).to(u.day) % SIDEREAL_YEAR
+    ph_earth_dud = (t_dud - t_0_earth).to(u.day) % SIDEREAL_YEAR
+    ph_earth_gen = (t_gen - t_0_earth).to(u.day) % SIDEREAL_YEAR
     idx = np.argsort(ph_earth_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_earth_gen[idx], dveff_earth_gen[idx], **mdl_style)
+    plt.plot(ph_earth_dud, dveff_earth_dud, **dud_style)
     plt.errorbar(ph_earth_obs, dveff_earth_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, SIDEREAL_YEAR.to(u.day))
@@ -361,12 +372,14 @@ def visualize_model_folded(model, data, pars):
     ax2 = plt.subplot(132)
 
     # calculate phases
-    ph_outer_gen = (t_gen - model.target.t_asc_o) / model.target.p_orb_o % 1
     ph_outer_obs = (t_obs - model.target.t_asc_o) / model.target.p_orb_o % 1
+    ph_outer_dud = (t_dud - model.target.t_asc_o) / model.target.p_orb_o % 1
+    ph_outer_gen = (t_gen - model.target.t_asc_o) / model.target.p_orb_o % 1
     idx = np.argsort(ph_outer_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_outer_gen[idx], dveff_outer_gen[idx], **mdl_style)
+    plt.plot(ph_outer_dud, dveff_outer_dud, **dud_style)
     plt.errorbar(ph_outer_obs, dveff_outer_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
@@ -383,12 +396,14 @@ def visualize_model_folded(model, data, pars):
     ax3 = plt.subplot(133)
 
     # calculate phases
-    ph_inner_gen = (t_gen - model.target.t_asc_i) / model.target.p_orb_i % 1
     ph_inner_obs = (t_obs - model.target.t_asc_i) / model.target.p_orb_i % 1
+    ph_inner_dud = (t_dud - model.target.t_asc_i) / model.target.p_orb_i % 1
+    ph_inner_gen = (t_gen - model.target.t_asc_i) / model.target.p_orb_i % 1
     idx = np.argsort(ph_inner_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_inner_gen[idx], dveff_inner_gen[idx], **mdl_style)
+    plt.plot(ph_inner_dud, dveff_inner_dud, **dud_style)
     plt.errorbar(ph_inner_obs, dveff_inner_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
