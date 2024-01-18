@@ -114,7 +114,6 @@ def visualize_model_zoom(model, data, pars):
     # plt.subplots_adjust(wspace=0.1, hspace=0.2)
 
     mdl_alpha = 0.4
-    obs_alpha = 1
     col_zoom_lbl = "black"
 
     # compute model at observation times, then find residuals
@@ -146,7 +145,6 @@ def visualize_model_zoom(model, data, pars):
         data.dveff_obs,
         yerr=data.dveff_err,
         **obs_style,
-        alpha=obs_alpha,
     )
     plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
 
@@ -178,9 +176,7 @@ def visualize_model_zoom(model, data, pars):
 
     # residuals
     ax2 = plt.subplot(412)
-    plt.errorbar(
-        data.t_obs.mjd, dveff_res, yerr=data.dveff_err, **obs_style, alpha=obs_alpha
-    )
+    plt.errorbar(data.t_obs.mjd, dveff_res, yerr=data.dveff_err, **obs_style)
     plt.axhline(**mdl_style)
     plt.xlim(tlim_long)
     plt.title("(b)   residuals", **title_kwargs)
