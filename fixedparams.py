@@ -95,6 +95,8 @@ class Target:
 
         # orbital parameters - Archibald, Voisin
         if ref_orbital == "Archibald":
+            self.t_ref_orb = Time(55920.0, format="mjd", scale="tcb")
+
             self.p_orb_i = 1.6293932 * u.day
             self.p_orb_o = 327.25685 * u.day
 
@@ -126,6 +128,9 @@ class Target:
             self.k_o = 2 * np.pi * asini_o / self.p_orb_o / np.sqrt(1 - self.ecc_o**2)
 
         elif ref_orbital == "Voisin":
+            # No time scale is listed in the paper; I have assumed TCB here.
+            self.t_ref_orb = Time(56492.0, format="mjd", scale="tcb")
+
             self.p_orb_i = 1.6294006 * u.day
             self.p_orb_o = 327.25539 * u.day
 
@@ -146,7 +151,6 @@ class Target:
 
             # Time of ascending node given in Voisin et al 2020 is defined differently
             # so we need to compute these from the listed times of periastron passage.
-            # No time scale is listed in the paper; I have assumed TCB here.
             self.t_per_i = Time(55917.5975, format="mjd", scale="tcb")
             self.t_per_o = Time(56317.21976, format="mjd", scale="tcb")
 
@@ -160,6 +164,8 @@ class Target:
             self.k_o = 2 * np.pi * asini_o / self.p_orb_o / np.sqrt(1 - self.ecc_o**2)
 
         elif ref_orbital == "Parfile59575":
+            self.t_ref_orb = Time(55920.0, format="mjd", scale="tcb")
+
             self.p_orb_i = 1.6293932 * u.day  # Archibald
             self.p_orb_o = 327.219804954111 * u.day
 
@@ -185,6 +191,8 @@ class Target:
             self.k_o = 2 * np.pi * asini_o / self.p_orb_o / np.sqrt(1 - self.ecc_o**2)
 
         elif ref_orbital == "J0437":
+            self.t_ref_orb = Time(51194.0, format="mjd", scale="tbd")  # van Straten
+
             self.p_orb_i = 5.7410459 * u.day
             self.p_orb_o = 1 * u.day
 
