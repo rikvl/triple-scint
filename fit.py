@@ -107,7 +107,9 @@ class FitBase:
 
         # create grid of EFAC and EQUAD values
         ef_grid = ef_grid if ef_grid is not None else np.linspace(0.5, 2.5, 21)
-        eq_grid = eq_grid if eq_grid is not None else (np.linspace(0, 3, 31) * UNIT_DVEFF)
+        eq_grid = (
+            eq_grid if eq_grid is not None else (np.linspace(0, 3, 31) * UNIT_DVEFF)
+        )
 
         nef = len(ef_grid)
         neq = len(eq_grid)
@@ -218,7 +220,7 @@ class FitPhen(FitBase):
         # which is the index 0 entry in the vector of parameters
         self.sol_sign = np.sign(popt[0])
 
-        # correct colution to have correct sign
+        # set optimum solution to have correct sign
         popt *= self.sol_sign
 
         # store curve_fit solution and covariance matrix
