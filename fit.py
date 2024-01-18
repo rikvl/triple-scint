@@ -276,6 +276,14 @@ class FitPhys(FitBase):
 
         pars_mdl = self.model.pars_fit2mdl(res.x)
 
+        # find sign for which convention 0 <= xi < 180 deg holds, which is equal
+        # to the sign of sin( xi )
+        self.sol_sign = np.sign(np.sin(pars_mdl["xi"]))
+
+        # change optimum solution to conform to convention for xi
+        pars_mdl["xi"] %= 180 * u.deg
+        pars_mdl["v_lens"] *= self.sol_sign
+
         self.pars_opt = pars_mdl
 
         return pars_mdl
