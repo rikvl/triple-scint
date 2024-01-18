@@ -64,17 +64,17 @@ class FitBase:
     def print_result(self, pars_mdl):
         """Quick view of parameter values and reduced chi^2."""
 
-        for par_name in pars_mdl:
-            print(f"{par_name:8s} {pars_mdl[par_name]:8.2f}")
-
         if "cosi_p" in pars_mdl:
-            i_p = np.arccos(pars_mdl["cosi_p"]) / np.pi * 180 * u.deg
-            print(f"\ni_p      {i_p:8.2f}")
+            i_p = np.arccos(pars_mdl["cosi_p"]).to(u.deg)
+            print(f"i_p              {i_p:8.2f}")
 
-        print(f"\nchi2red  {self.get_chi2(pars_mdl)/self.ndof:8.2f}")
+        for par_name, par_val in pars_mdl.items():
+            print(f"{par_name:16s} {par_val:8.2f}")
 
-        print(f"\nefac     {self.data.efac:8.2f}")
-        print(f"\nequad    {self.data.equad:8.2f}")
+        print(f"\nchi2red          {self.get_chi2(pars_mdl)/self.ndof:12.6f}\n")
+
+        print(f"efac             {self.data.efac:8.2f}")
+        print(f"equad            {self.data.equad:8.2f}")
 
     def find_equad(self, pars_mdl_init=None, init_equad=None, tol=1e-4, maxiter=100):
         """Crude iterative method to find and set EQUAD for which chi^2 = 1"""
