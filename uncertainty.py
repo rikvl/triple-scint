@@ -35,6 +35,7 @@ class SamplePhen(SampleBase):
 
     def __init__(self, fit, nmc=40000):
         self.nmc = nmc
+        self.fit = fit
         self.target = fit.model.target
         self.weights = None
 
@@ -75,6 +76,7 @@ class SamplePhys(SampleBase):
         """
 
         self.nmc = phen.nmc
+        self.fit = phen.fit
         self.target = phen.target
 
         # initialize weights at unity
@@ -110,6 +112,7 @@ class SamplePhys(SampleBase):
         """
 
         self.nmc = phen.nmc
+        self.fit = phen.fit
         self.target = phen.target
 
         # initialize weights at unity
@@ -186,6 +189,7 @@ class SamplePres(SampleBase):
         """Create sample in results-presenting parameters from SamplePhys."""
 
         self.nmc = phys.nmc
+        self.fit = phys.fit
         self.target = phys.target
         self.weights = phys.weights
 
