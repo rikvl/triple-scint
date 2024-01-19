@@ -16,7 +16,7 @@ class SampleBase:
     def display_samp_quantiles(self):
         txt_all = ""
         for par, samp in self.samp_dict.items():
-            result = tex_uncertainties(samp.distribution.value)
+            result = tex_uncertainties(samp.distribution.value, self.weights)
             txt = (
                 f"{self.pardict[par].symbol} &= {result} "
                 f"\\; {self.pardict[par].unit_str} \\\\[0.5em]"
