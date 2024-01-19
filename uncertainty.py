@@ -59,6 +59,8 @@ class SamplePhen(SampleBase):
             "dveff_c": dveff_c.to(UNIT_DVEFF),
         }
 
+        self.weights = np.ones(nmc)
+
 
 class SamplePhys(SampleBase):
     """Monte Carlo sample in physical parameters."""
@@ -75,6 +77,7 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
+        self.weights = phen.weights
 
         i_p_mu = phen.target.i_p_prior_mu
         i_p_sig = phen.target.i_p_prior_sig
@@ -107,6 +110,7 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
+        self.weights = phen.weights
 
         # pick orientation of orbit
         cos_sign = cos_sign or np.sign(np.cos(phen.target.i_p_prior_mu))
@@ -148,5 +152,6 @@ class SamplePres(SampleBase):
 
         self.nmc = phys.nmc
         self.target = phys.target
+        self.weights = phys.weights
 
         self.samp_dict = pars_phys2pres(phys.samp_dict)

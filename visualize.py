@@ -606,7 +606,12 @@ def plot_corner(samp, ranges=None, truths=None):
 
     with plt.rc_context({"axes.formatter.useoffset": False}):
         fig = corner.corner(
-            samp_array, labels=labels, range=ranges, truths=truths, **corner_kwargs
+            data=samp_array,
+            weights=samp.weights,
+            labels=labels,
+            range=ranges,
+            truths=truths,
+            **corner_kwargs,
         )
 
         # overplot_linear(fig, upars_harc, **linear_style)
