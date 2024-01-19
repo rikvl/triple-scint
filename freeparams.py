@@ -59,7 +59,8 @@ pardict_pres = {
     "i_p": par_i_p,
     "omega_p": par_omega_p,
     "d_p": par_d_p,
-    "d_s": par_d_s,
+    # "d_s": par_d_s,
+    "s": par_s,
     "xi": par_xi,
     "v_lens": par_v_lens,
 }
@@ -338,13 +339,14 @@ def pars_phys2pres(pars_phys):
     v_lens = pars_phys["v_lens"]
 
     i_p = np.arccos(cosi_p)
-    d_s = (1 - s) * d_p
+    # d_s = (1 - s) * d_p
 
     pars_pres = {
         "i_p": i_p.to(u.deg),
         "omega_p": omega_p.to(u.deg),
         "d_p": d_p.to(u.kpc),
-        "d_s": d_s.to(u.kpc),
+        # "d_s": d_s.to(u.kpc),
+        "s": s.to(u.dimensionless_unscaled),
         "xi": xi.to(u.deg),
         "v_lens": v_lens.to(u.km / u.s),
     }
