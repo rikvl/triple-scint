@@ -7,7 +7,7 @@ from IPython.display import display, Math
 
 from .freeparams import pardict_phen, pardict_phys, pardict_pres
 from .freeparams import pars_phen2phys_d_p, pars_phen2phys_cosi_p, pars_phys2pres
-from .utils import UNIT_DVEFF, tex_uncertainties
+from .utils import gaussian, UNIT_DVEFF, tex_uncertainties
 
 
 class SampleBase:
@@ -139,6 +139,38 @@ class SamplePhys(SampleBase):
         self.samp_dict = pars_phen2phys_d_p(
             phen.samp_dict, self.target, samp_d_p, self.cos_sign
         )
+
+    def weight_by_i_p(self):
+        cosi_p = self.samp_dict["cosi_p"].distribution
+        i_p = np.arccos(cosi_p)
+        weights_i_p = gaussian(
+            i_p.to_value(u.deg),
+            self.target.i_p_prior_mu.to_value(u.deg),
+            self.target.i_p_prior_sig.to_value(u.deg),
+        )
+
+        self.weights *= weights_i_p
+
+    def weight_by_omega_p(self):
+        omega_p = self.samp_dict["omega_p"].distribution
+        weights_omega_p = gaussian(
+            omega_p.to_value(u.deg),
+            self.target.omega_p_prior_mu.to_value(u.deg),
+            self.target.omega_p_prior_sig.to_value(u.deg),
+        )
+
+        self.weights *= weights_omega_p
+
+    def weight_by_parallax(self):
+        d_p = self.samp_dict["d_p"].distribution
+        parallax = d_p.to(u.mas, equivalencies=u.parallax())
+        weights_parallax = gaussian(
+            parallax.to_value(u.mas),
+            self.target.parallax_prior_mu.to_value(u.mas),
+            self.target.parallax_prior_sig.to_value(u.mas),
+        )
+
+        self.weights *= weights_parallax
 
 
 class SamplePres(SampleBase):
