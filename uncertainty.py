@@ -36,6 +36,7 @@ class SamplePhen(SampleBase):
     def __init__(self, fit, nmc=40000):
         self.nmc = nmc
         self.target = fit.model.target
+        self.weights = None
 
         np.random.seed(654321)
 
@@ -59,8 +60,6 @@ class SamplePhen(SampleBase):
             "dveff_c": dveff_c.to(UNIT_DVEFF),
         }
 
-        self.weights = np.ones(nmc)
-
 
 class SamplePhys(SampleBase):
     """Monte Carlo sample in physical parameters."""
@@ -77,7 +76,9 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
-        self.weights = phen.weights
+
+        # initialize weights at unity
+        self.weights = np.ones(self.nmc)
 
         i_p_mu = phen.target.i_p_prior_mu
         i_p_sig = phen.target.i_p_prior_sig
@@ -110,7 +111,9 @@ class SamplePhys(SampleBase):
 
         self.nmc = phen.nmc
         self.target = phen.target
-        self.weights = phen.weights
+
+        # initialize weights at unity
+        self.weights = np.ones(self.nmc)
 
         # pick orientation of orbit
         cos_sign = cos_sign or np.sign(np.cos(phen.target.i_p_prior_mu))
