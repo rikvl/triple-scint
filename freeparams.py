@@ -4,7 +4,7 @@ import numpy as np
 
 from astropy import units as u
 
-from .utils import get_v_0_e, UNIT_DVEFF
+from .utils import v_0_e, UNIT_DVEFF
 
 unit_str_dveff = r"\mathrm{ km/s / \sqrt{kpc} }"
 
@@ -127,7 +127,7 @@ def pars_phys2phen(pars_phys, target):
     )
 
     # factors for earth signal
-    amp_e = get_v_0_e() / np.sqrt(d_eff)
+    amp_e = v_0_e / np.sqrt(d_eff)
     amp_e_ra_cosdec = amp_e * np.sin(xi)
     amp_e_dec = amp_e * np.cos(xi)
 
@@ -157,7 +157,7 @@ def pars_phen2comm(pars_phen):
 
     # effective distance
     amp_e = np.sqrt(amp_e_ra_cosdec**2 + amp_e_dec**2)
-    d_eff = (get_v_0_e() / amp_e) ** 2
+    d_eff = (v_0_e / amp_e) ** 2
 
     # screen angle
     xi = np.arctan2(amp_e_ra_cosdec, amp_e_dec) % (360 * u.deg)

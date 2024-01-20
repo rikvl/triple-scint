@@ -7,7 +7,7 @@ from astropy.coordinates import SkyOffsetFrame
 from kepler import kepler as solve_kepler
 
 from .freeparams import pars_phen2comm
-from .utils import get_v_0_e, gaussian, UNIT_DVEFF
+from .utils import v_0_e, gaussian, UNIT_DVEFF
 
 
 class ModelBase:
@@ -24,7 +24,7 @@ class ModelBase:
             .transform_to(psr_frame)
             .velocity.d_xyz
         )
-        scaled_v_earth_xyz = v_earth_xyz / get_v_0_e()
+        scaled_v_earth_xyz = v_earth_xyz / v_0_e
         return scaled_v_earth_xyz
 
     def model_dveff_abs(
@@ -223,21 +223,21 @@ class ModelPhys(ModelBase):
         mu = self.target.mu_alpha_star * sinxi + self.target.mu_delta * cosxi
         v_p_sys = (d_p * mu).to(u.km / u.s, equivalencies=u.dimensionless_angles())
 
-        v_p_i_0 = self.target.k_i / sini_p
-        v_p_o_0 = self.target.k_o / sini_p
+        v_0_i = self.target.k_i / sini_p
+        v_0_o = self.target.k_o / sini_p
 
-        v_i_orb = -v_p_i_0 * (
+        v_p_orb_i = -v_0_i * (
             np.cos(delta_omega_p) * sin_term_i
             - np.sin(delta_omega_p) * cos_term_i * cosi_p
         )
-        v_o_orb = -v_p_o_0 * (
+        v_p_orb_o = -v_0_o * (
             np.cos(delta_omega_p) * sin_term_o
             - np.sin(delta_omega_p) * cos_term_o * cosi_p
         )
 
-        v_p = v_p_sys + v_i_orb + v_o_orb
+        v_p = v_p_sys + v_p_orb_i + v_p_orb_o
 
-        v_earth_xyz = scaled_v_earth_xyz * get_v_0_e()
+        v_earth_xyz = scaled_v_earth_xyz * v_0_e
         v_earth = v_earth_xyz[1] * sinxi + v_earth_xyz[2] * cosxi
 
         v_eff = 1 / s * v_lens - ((1 - s) / s) * v_p - v_earth

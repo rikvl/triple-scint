@@ -26,17 +26,13 @@ PARS_LABELS_UNITS = [
     label + unit_str for label, unit_str in zip(PARS_MDL_LABELS, PARS_UNIT_STRS)
 ]
 
+# Earth's orbital shape parameters
+p_orb_e = SIDEREAL_YEAR
+a_e = 1.0000010178 * u.au
+ecc_e = 0.0167086
 
-def get_v_0_e():
-    """Get Earth's midrange orbital speed."""
-
-    p_orb_e = SIDEREAL_YEAR
-    a_e = 1.0000010178 * u.au
-    ecc_e = 0.0167086
-
-    v_0_e = 2 * np.pi * a_e / (p_orb_e * np.sqrt(1 - ecc_e**2))
-
-    return v_0_e.to(u.km / u.s)
+# Earth's midrange orbital speed
+v_0_e = (2 * np.pi * a_e / p_orb_e / np.sqrt(1 - ecc_e**2)).to(u.km / u.s)
 
 
 def th2ma(th, ecc):
