@@ -191,7 +191,7 @@ class Target:
             self.k_o = 2 * np.pi * asini_o / self.p_orb_o / np.sqrt(1 - self.ecc_o**2)
 
         elif ref_orbital == "J0437":
-            self.t_ref_orb = Time(51194.0, format="mjd", scale="tbd")  # van Straten
+            self.t_ref_orb = Time(51194.0, format="mjd", scale="tdb")  # van Straten
 
             self.p_orb_i = 5.7410459 * u.day
             self.p_orb_o = 1 * u.day
@@ -202,10 +202,10 @@ class Target:
             asini_i = 3.3667144 * const.c * u.s
             asini_o = 0 * const.c * u.s
 
-            self.ecc_i = 0
-            self.ecc_o = 0
+            self.ecc_i = 1.91811e-5 * u.dimensionless_unscaled
+            self.ecc_o = 0 * u.dimensionless_unscaled
 
-            self.arg_per_i = 0 * u.deg
+            self.arg_per_i = 1.363 * u.deg
             self.arg_per_o = 0 * u.deg
 
             ma_asc_i = -th2ma(self.arg_per_i, self.ecc_i)
@@ -227,7 +227,7 @@ class Target:
         elif ref_parallax == "J0437":
             d_p = 156.79 * u.pc
             self.parallax_prior_mu = d_p.to(u.mas, equivalencies=u.parallax())
-            self.parallax_prior_sig = 0.0001 * u.mas
+            self.parallax_prior_sig = 0.01 * u.mas
         else:
             raise ValueError(f"Unrecognized ref_parallax {ref_parallax}")
 
@@ -243,7 +243,7 @@ class Target:
             self.i_p_prior_sig = 0.014 * u.deg
         elif ref_inclination == "J0437":
             self.i_p_prior_mu = 137.56 * u.deg
-            self.i_p_prior_sig = 0.0001 * u.deg
+            self.i_p_prior_sig = 0.04 * u.deg
         else:
             raise ValueError(f"Unrecognized ref_inclination {ref_inclination}")
 
@@ -253,7 +253,7 @@ class Target:
             self.omega_p_prior_sig = 0.14 * u.deg
         elif ref_omega_p == "J0437":
             self.omega_p_prior_mu = 207.0 * u.deg
-            self.omega_p_prior_sig = 0.0001 * u.deg
+            self.omega_p_prior_sig = 1.2 * u.deg
         else:
             raise ValueError(f"Unrecognized ref_omega_p {ref_omega_p}")
 
