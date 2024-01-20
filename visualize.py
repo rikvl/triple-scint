@@ -126,9 +126,8 @@ def visualize_model_zoom(model, data, pars):
     # --- full time series ---
 
     # compute model
-    # tlim_long = [np.min(data.t_obs.mjd) - 20, np.max(data.t_obs.mjd) + 40]
-    # tlim_long = [59280, 60000]
-    tlim_long = data.tlim
+    tlim_long = [59279.74731687221, 59959.35142334566]
+    # tlim_long = data.tlim
     t_mjd_many = np.arange(tlim_long[0], tlim_long[-1], 0.1)
     t_many = Time(t_mjd_many, format="mjd")
     dveff_mdl_many = model.get_dveff_signed_from_t(pars, t_many)
@@ -214,9 +213,6 @@ def visualize_model_zoom(model, data, pars):
 
     iax_upper = 10
     for izoom, t_zoom in enumerate(t_zoom_list):
-        if t_zoom < tlim_long[0] or t_zoom > tlim_long[1]:
-            continue
-
         # generate letter of panel
         letter = chr(ord("`") + izoom + 3)
 
@@ -232,16 +228,17 @@ def visualize_model_zoom(model, data, pars):
             tlim_zoom += izoom_big[izoom]
 
         # add zoom label to main plot
-        tmid_zoom = np.mean(tlim_zoom)
-        ax1.text(
-            tmid_zoom,
-            -5,
-            f"{letter}",
-            fontsize=15,
-            color=col_zoom_lbl,
-            va="top",
-            ha="center",
-        )
+        if t_zoom > tlim_long[0] and t_zoom < tlim_long[1]:
+            tmid_zoom = np.mean(tlim_zoom)
+            ax1.text(
+                tmid_zoom,
+                -5,
+                f"{letter}",
+                fontsize=15,
+                color=col_zoom_lbl,
+                va="top",
+                ha="center",
+            )
 
         # compute model for zoomed region
         t_mjd_zoom = np.arange(tlim_zoom[0], tlim_zoom[-1], 0.005)
