@@ -6,7 +6,7 @@ from astropy.coordinates import SkyOffsetFrame
 
 from kepler import kepler as solve_kepler
 
-from .freeparams import pars_phen2comm
+from .freeparams import pardict_phen, pardict_phys, pars_phen2comm
 from .utils import v_0_e, gaussian, UNIT_DVEFF
 
 
@@ -47,11 +47,30 @@ class ModelBase:
 
         return dveff_signed
 
+    def pars_fit2mdl(self, pars_fit):
+        """Convert array of parameters for fitting to dict of Astropy Quantities."""
+
+        pars_mdl = {}
+        for key, parfit in zip(self.pardict, pars_fit):
+            pars_mdl[key] = parfit * self.pardict[key].unit_ap
+
+        return pars_mdl
+
+    def pars_mdl2fit(self, pars_mdl):
+        """Convert dict of Astropy Quantities to array of parameters for fitting."""
+
+        pars_fit = np.empty(self.ndim)
+        for i, key in enumerate(self.pardict):
+            pars_fit[i] = pars_mdl[key].to_value(self.pardict[key].unit_ap)
+
+        return pars_fit
+
 
 class ModelPhen(ModelBase):
     """Phenomenological model for scaled effective velocity as function of time."""
 
-    ndim = 5
+    pardict = pardict_phen
+    ndim = len(pardict)
 
     def get_pulsar_terms(self, t):
         sin_omg_i = np.sin(self.target.arg_per_i)
@@ -93,36 +112,6 @@ class ModelPhen(ModelBase):
         dveff = dveff_p - dveff_e + dveff_c
 
         return (dveff).to(UNIT_DVEFF)
-
-    def pars_fit2mdl(self, pars_fit):
-        """Convert list of parameters for fitting to dict of Astropy Quantities."""
-
-        amp_e_ra_cosdec, amp_e_dec, amp_ps, amp_pc, dveff_c = pars_fit
-
-        pars_mdl = {
-            "amp_e_ra_cosdec": amp_e_ra_cosdec * UNIT_DVEFF,
-            "amp_e_dec": amp_e_dec * UNIT_DVEFF,
-            "amp_ps": amp_ps * UNIT_DVEFF,
-            "amp_pc": amp_pc * UNIT_DVEFF,
-            "dveff_c": dveff_c * UNIT_DVEFF,
-        }
-
-        return pars_mdl
-
-    def pars_mdl2fit(self, pars_mdl):
-        """Convert dict of Astropy Quantities to list of parameters for fitting."""
-
-        pars_fit = np.array(
-            [
-                pars_mdl["amp_e_ra_cosdec"].to_value(UNIT_DVEFF),
-                pars_mdl["amp_e_dec"].to_value(UNIT_DVEFF),
-                pars_mdl["amp_ps"].to_value(UNIT_DVEFF),
-                pars_mdl["amp_pc"].to_value(UNIT_DVEFF),
-                pars_mdl["dveff_c"].to_value(UNIT_DVEFF),
-            ]
-        )
-
-        return pars_fit
 
     def get_dveff_signed_components_from_t(self, pars, t):
         sin_term_i, cos_term_i, sin_term_o, cos_term_o = self.get_pulsar_terms(t)
@@ -178,7 +167,8 @@ class ModelPhen(ModelBase):
 class ModelPhys(ModelBase):
     """Physical model for scaled effective velocity as function of time."""
 
-    ndim = 6
+    pardict = pardict_phys
+    ndim = len(pardict)
 
     def get_pulsar_terms(self, t):
         sin_omg_i = np.sin(self.target.arg_per_i)
@@ -288,38 +278,6 @@ class ModelPhys(ModelBase):
             self.target.omega_p_prior_mu.to_value(u.rad),
             self.target.omega_p_prior_sig.to_value(u.rad),
         )
-
-    def pars_fit2mdl(self, pars_fit):
-        """Convert list of parameters for fitting to dict of Astropy Quantities."""
-
-        cosi_p, omega_p, d_p, s, xi, v_lens = pars_fit
-
-        pars_mdl = {
-            "cosi_p": cosi_p * u.dimensionless_unscaled,
-            "omega_p": (omega_p * u.rad).to(u.deg),
-            "d_p": d_p * u.kpc,
-            "s": s * u.dimensionless_unscaled,
-            "xi": (xi * u.rad).to(u.deg),
-            "v_lens": v_lens * u.km / u.s,
-        }
-
-        return pars_mdl
-
-    def pars_mdl2fit(self, pars_mdl):
-        """Convert dict of Astropy Quantities to list of parameters for fitting."""
-
-        pars_fit = np.array(
-            [
-                pars_mdl["cosi_p"].to_value(u.dimensionless_unscaled),
-                pars_mdl["omega_p"].to_value(u.rad),
-                pars_mdl["d_p"].to_value(u.kpc),
-                pars_mdl["s"].to_value(u.dimensionless_unscaled),
-                pars_mdl["xi"].to_value(u.rad),
-                pars_mdl["v_lens"].to_value(u.km / u.s),
-            ]
-        )
-
-        return pars_fit
 
     def get_dveff_signed_components_from_t(self, pars, t):
         (sin_term_i, cos_term_i, sin_term_o, cos_term_o) = self.get_pulsar_terms(t)
