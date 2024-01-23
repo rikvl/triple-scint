@@ -68,12 +68,8 @@ class SamplePhys(SampleBase):
     npar = 6
     pardict = pardict_phys
 
-    def from_phen_and_i_p(self, phen):
-        """Create sample in physical parameters from SamplePhen and inclination.
-
-        Propagate uncertainties from phenomenological model parameters to
-        physical parameters using a known pulsar orbital inclination.
-        """
+    def from_phen_common(self, phen):
+        """Create sample in physical parameters from SamplePhen."""
 
         self.nmc = phen.nmc
         self.fit = phen.fit
@@ -81,6 +77,15 @@ class SamplePhys(SampleBase):
 
         # initialize weights at unity
         self.weights = np.ones(self.nmc)
+
+    def from_phen_and_i_p(self, phen):
+        """Create sample in physical parameters from SamplePhen and inclination.
+
+        Propagate uncertainties from phenomenological model parameters to
+        physical parameters using a known pulsar orbital inclination.
+        """
+
+        self.from_phen_common(phen)
 
         i_p_mu = phen.target.i_p_prior_mu
         i_p_sig = phen.target.i_p_prior_sig
@@ -111,12 +116,7 @@ class SamplePhys(SampleBase):
         physical parameters using a known pulsar parallax.
         """
 
-        self.nmc = phen.nmc
-        self.fit = phen.fit
-        self.target = phen.target
-
-        # initialize weights at unity
-        self.weights = np.ones(self.nmc)
+        self.from_phen_common(phen)
 
         # pick orientation of orbit
         cos_sign = cos_sign or np.sign(np.cos(phen.target.i_p_prior_mu))
