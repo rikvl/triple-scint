@@ -1,6 +1,7 @@
 import numpy as np
 
 from astropy import units as u
+from astropy import uncertainty as unc
 
 from astropy.time import Time
 
@@ -9,10 +10,9 @@ from scipy.stats import kstest
 
 import emcee
 
-from IPython.display import display, Math
-
-from .freeparams import guess_pars_phen, guess_pars_phys
-from .utils import tex_uncertainties, UNIT_DVEFF, PARS_MDL_LABELS, PARS_UNIT_STRS
+from .uncertainty import SamplePhys
+from .freeparams import guess_pars_phen, guess_pars_phys, pardict_phys
+from .utils import UNIT_DVEFF
 
 
 class FitBase:
@@ -292,15 +292,18 @@ class FitPhys(FitBase):
 class MCMC:
     """Object to do Markov-chain Monte Carlo parameter estimation of a fit."""
 
-    def __init__(self, fit):
-        self.fit = fit
-        self.ndim = fit.ndim
-
-    def prep_mcmc(
-        self, nwalker=64, pars_mdl_init=None, spread_init=1e-8, backend_filename=None
+    def from_fit(
+        self,
+        fit,
+        nwalker=64,
+        pars_mdl_init=None,
+        spread_init=1e-8,
+        backend_filename=None,
     ):
         """Prepare MCMC sampler."""
-
+        self.fit = fit
+        self.ndim = fit.ndim
+        self.pardict = fit.model.pardict
         self.nwalker = nwalker
 
         # Setup backend
@@ -370,37 +373,45 @@ class MCMC:
         else:
             print("MCMC done, but not converged...")
 
-    def trim_chain(self, backend_filename=None):
+    def from_backend_file(self, backend_filename, pardict=pardict_phys):
+        """Load MCMC object from backend file."""
+
+        self.backend_filename = backend_filename
+        self.pardict = pardict
+
+        self.backend = emcee.backends.HDFBackend(backend_filename)
+
+        self.ndim = self.backend.shape[1]
+        self.nwalker = self.backend.shape[0]
+        self.nstep = self.backend.iteration
+
+    def trim_chain(self):
         """Remove burn-in and thin chain."""
 
-        if backend_filename is None:
-            backend_filename = self.backend_filename
-
-        reader = emcee.backends.HDFBackend(backend_filename)
-
-        tau = reader.get_autocorr_time()
+        tau = self.backend.get_autocorr_time(tol=0)
         burnin = int(2 * np.max(tau))
         thin = int(0.5 * np.min(tau))
 
-        self.flat_samples = reader.get_chain(discard=burnin, flat=True, thin=thin)
+        self.flat_samples = self.backend.get_chain(discard=burnin, flat=True, thin=thin)
 
         print(f"burn-in: {burnin}")
         print(f"thin: {thin}")
         print(f"flat chain shape: {self.flat_samples.shape}")
 
-    def scale_samples(self):
-        """Add units to the samples, and convert cosi_p to i_p."""
+    def to_sample(self, sample=None):
+        """Convert trimmed chain to Sample object."""
 
-        scalings = [1, 180 / np.pi, 1, 180 / np.pi, 1, 1]
+        sample = sample or SamplePhys()
 
-        self.scaled_samples = self.flat_samples * scalings
-        self.scaled_samples[:, 0] = np.arccos(self.scaled_samples[:, 0]) * 180 / np.pi
+        sample.nmc = self.flat_samples.shape[0]
+        sample.fit = "mcmc fit"
+        sample.target = "mcmc target"
+        sample.weights = None
 
-    def print_result(self):
-        for i in range(self.ndim):
-            result = tex_uncertainties(self.scaled_samples[:, i])
-            txt = (
-                f"{PARS_MDL_LABELS[i][1:-1]} = {result} "
-                f"\\; \\mathrm{{ {PARS_UNIT_STRS[i][2:-1]} }}"
+        sample.samp_dict = {}
+        for i, key in enumerate(self.pardict):
+            sample.samp_dict[key] = unc.Distribution(
+                self.flat_samples[:, i] * self.pardict[key].unit_ap
             )
-            display(Math(txt))
+
+        return sample
