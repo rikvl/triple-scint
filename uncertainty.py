@@ -178,6 +178,12 @@ class SamplePhys(SampleBase):
 
         self.weights *= weights_parallax
 
+    def weight_for_constant_space_density(self):
+        d_p = self.samp_dict["d_p"].distribution
+        weights_d_p = d_p.to_value(u.kpc) ** 2
+
+        self.weights *= weights_d_p
+
 
 class SamplePres(SampleBase):
     """Monte Carlo sample in results-presenting parameters."""
