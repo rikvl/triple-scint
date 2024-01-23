@@ -107,14 +107,14 @@ def pars_phys2phen(pars_phys, target):
     d_eff = (1 - s) / s * d_p
 
     delta_omega_p = xi - omega_p
-    sindelomg_p = np.sin(delta_omega_p)
-    cosdelomg_p = np.cos(delta_omega_p)
-    b2_p = cosdelomg_p**2 + sindelomg_p**2 * cosi_p**2
+    sindelta_omega_p = np.sin(delta_omega_p)
+    cosdelta_omega_p = np.cos(delta_omega_p)
+    b2_p = cosdelta_omega_p**2 + sindelta_omega_p**2 * cosi_p**2
 
     # amplitude and phase of pulsar signal
     sini_p = np.sqrt(1 - cosi_p**2)
     amp_p = np.sqrt(d_eff) / d_p * k_p / sini_p * np.sqrt(b2_p)
-    chi_p = np.arctan2(sindelomg_p * cosi_p, cosdelomg_p) % (360 * u.deg)
+    chi_p = np.arctan2(sindelta_omega_p * cosi_p, cosdelta_omega_p) % (360 * u.deg)
 
     # constant in scintillometric signal
     mu_p_sys = psr_coord.pm_ra_cosdec * np.sin(xi) + psr_coord.pm_dec * np.cos(xi)

@@ -73,10 +73,10 @@ class ModelPhen(ModelBase):
     ndim = len(pardict)
 
     def get_pulsar_terms(self, t):
-        sin_omg_i = np.sin(self.target.arg_per_i)
-        cos_omg_i = np.cos(self.target.arg_per_i)
-        sin_omg_o = np.sin(self.target.arg_per_o)
-        cos_omg_o = np.cos(self.target.arg_per_o)
+        sin_arg_per_i = np.sin(self.target.arg_per_i)
+        cos_arg_per_i = np.cos(self.target.arg_per_i)
+        sin_arg_per_o = np.sin(self.target.arg_per_o)
+        cos_arg_per_o = np.cos(self.target.arg_per_o)
 
         ma_i = ((t - self.target.t_per_i) / self.target.p_orb_i).decompose() * u.cycle
         ma_o = ((t - self.target.t_per_o) / self.target.p_orb_o).decompose() * u.cycle
@@ -84,10 +84,10 @@ class ModelPhen(ModelBase):
         _, cos_th_i, sin_th_i = solve_kepler(ma_i.to_value(u.rad), self.target.ecc_i)
         _, cos_th_o, sin_th_o = solve_kepler(ma_o.to_value(u.rad), self.target.ecc_o)
 
-        sin_ph_i = sin_omg_i * cos_th_i + cos_omg_i * sin_th_i
-        cos_ph_i = cos_omg_i * cos_th_i - sin_omg_i * sin_th_i
-        sin_ph_o = sin_omg_o * cos_th_o + cos_omg_o * sin_th_o
-        cos_ph_o = cos_omg_o * cos_th_o - sin_omg_o * sin_th_o
+        sin_ph_i = sin_arg_per_i * cos_th_i + cos_arg_per_i * sin_th_i
+        cos_ph_i = cos_arg_per_i * cos_th_i - sin_arg_per_i * sin_th_i
+        sin_ph_o = sin_arg_per_o * cos_th_o + cos_arg_per_o * sin_th_o
+        cos_ph_o = cos_arg_per_o * cos_th_o - sin_arg_per_o * sin_th_o
 
         return sin_ph_i, cos_ph_i, sin_ph_o, cos_ph_o
 
@@ -171,10 +171,10 @@ class ModelPhys(ModelBase):
     ndim = len(pardict)
 
     def get_pulsar_terms(self, t):
-        sin_omg_i = np.sin(self.target.arg_per_i)
-        cos_omg_i = np.cos(self.target.arg_per_i)
-        sin_omg_o = np.sin(self.target.arg_per_o)
-        cos_omg_o = np.cos(self.target.arg_per_o)
+        sin_arg_per_i = np.sin(self.target.arg_per_i)
+        cos_arg_per_i = np.cos(self.target.arg_per_i)
+        sin_arg_per_o = np.sin(self.target.arg_per_o)
+        cos_arg_per_o = np.cos(self.target.arg_per_o)
 
         ma_i = ((t - self.target.t_per_i) / self.target.p_orb_i).decompose() * u.cycle
         ma_o = ((t - self.target.t_per_o) / self.target.p_orb_o).decompose() * u.cycle
@@ -182,15 +182,15 @@ class ModelPhys(ModelBase):
         _, cos_th_i, sin_th_i = solve_kepler(ma_i.to_value(u.rad), self.target.ecc_i)
         _, cos_th_o, sin_th_o = solve_kepler(ma_o.to_value(u.rad), self.target.ecc_o)
 
-        sin_ph_i = sin_omg_i * cos_th_i + cos_omg_i * sin_th_i
-        cos_ph_i = cos_omg_i * cos_th_i - sin_omg_i * sin_th_i
-        sin_ph_o = sin_omg_o * cos_th_o + cos_omg_o * sin_th_o
-        cos_ph_o = cos_omg_o * cos_th_o - sin_omg_o * sin_th_o
+        sin_ph_i = sin_arg_per_i * cos_th_i + cos_arg_per_i * sin_th_i
+        cos_ph_i = cos_arg_per_i * cos_th_i - sin_arg_per_i * sin_th_i
+        sin_ph_o = sin_arg_per_o * cos_th_o + cos_arg_per_o * sin_th_o
+        cos_ph_o = cos_arg_per_o * cos_th_o - sin_arg_per_o * sin_th_o
 
-        sin_term_i = sin_ph_i + self.target.ecc_i * sin_omg_i
-        cos_term_i = cos_ph_i + self.target.ecc_i * cos_omg_i
-        sin_term_o = sin_ph_o + self.target.ecc_o * sin_omg_o
-        cos_term_o = cos_ph_o + self.target.ecc_o * cos_omg_o
+        sin_term_i = sin_ph_i + self.target.ecc_i * sin_arg_per_i
+        cos_term_i = cos_ph_i + self.target.ecc_i * cos_arg_per_i
+        sin_term_o = sin_ph_o + self.target.ecc_o * sin_arg_per_o
+        cos_term_o = cos_ph_o + self.target.ecc_o * cos_arg_per_o
 
         return sin_term_i, cos_term_i, sin_term_o, cos_term_o
 
