@@ -126,8 +126,7 @@ def visualize_model_zoom(model, data, pars):
     # --- full time series ---
 
     # compute model
-    tlim_long = [59279.74731687221, 59959.35142334566]
-    # tlim_long = data.tlim
+    tlim_long = data.t_lim_mjd
     t_mjd_many = np.arange(tlim_long[0], tlim_long[-1], 0.1)
     t_many = Time(t_mjd_many, format="mjd")
     dveff_mdl_many = model.get_dveff_signed_from_t(pars, t_many)
@@ -300,7 +299,7 @@ def visualize_model_folded(model, data, pars, npoints=2000):
     t_dud = data.t_dud
 
     # Define dense grid of times
-    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
+    t_gen_mjd = np.linspace(data.t_lim_mjd[0], data.t_lim_mjd[1], npoints)
     t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
 
     # Compute model components at observation times
@@ -436,7 +435,7 @@ def visualize_model_components(model, data, pars):
 
     # Define dense grid of times
     npoints = 2000
-    t_gen_mjd = np.linspace(data.tlim[0], data.tlim[1], npoints)
+    t_gen_mjd = np.linspace(data.t_lim_mjd[0], data.t_lim_mjd[1], npoints)
     t_gen = Time(t_gen_mjd, format="mjd", scale="utc")
 
     # Compute model components at dense grid of times
@@ -457,7 +456,7 @@ def visualize_model_components(model, data, pars):
     plt.plot(t_gen.mjd, dveff_full_gen, **mdl_style, alpha=mdl_alpha)
     plt.errorbar(data.t_obs.mjd, dveff_signed_obs, yerr=data.dveff_err, **obs_style)
 
-    plt.xlim(data.tlim)
+    plt.xlim(data.t_lim_mjd)
     plt.xlabel("MJD")
     plt.ylabel(dveff_signed_lbl)
 
@@ -471,7 +470,7 @@ def visualize_model_components(model, data, pars):
     plt.plot(t_gen.mjd, dveff_earth_gen, **mdl_style)
     plt.errorbar(data.t_obs.mjd, dveff_earth_res, yerr=data.dveff_err, **obs_style)
 
-    plt.xlim(data.tlim)
+    plt.xlim(data.t_lim_mjd)
     plt.ylim(ylim0)
     plt.xlabel("MJD")
     plt.ylabel(dveff_signed_lbl)
@@ -484,7 +483,7 @@ def visualize_model_components(model, data, pars):
     plt.plot(t_gen.mjd, dveff_outer_gen, **mdl_style)
     plt.errorbar(data.t_obs.mjd, dveff_outer_res, yerr=data.dveff_err, **obs_style)
 
-    plt.xlim(data.tlim)
+    plt.xlim(data.t_lim_mjd)
     plt.ylim(ylim0)
     plt.xlabel("MJD")
     plt.ylabel(dveff_signed_lbl)
