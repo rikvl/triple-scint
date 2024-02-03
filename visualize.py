@@ -217,7 +217,8 @@ def visualize_model_zoom(model, data, pars):
     dveff_res = data.dveff_obs - dveff_mdl
 
     # compute model at failed observation times
-    dveff_mdl_dud = np.abs(model.get_dveff_signed_from_t(pars, data.t_dud))
+    if data.t_dud:
+        dveff_mdl_dud = np.abs(model.get_dveff_signed_from_t(pars, data.t_dud))
 
     # --- full time series ---
 
@@ -240,7 +241,8 @@ def visualize_model_zoom(model, data, pars):
         yerr=data.dveff_err,
         **obs_style,
     )
-    plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
+    if data.t_dud:
+        plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
 
     tick_t_iso = [
         "2021-04-01",
@@ -341,7 +343,7 @@ def visualize_model_zoom(model, data, pars):
         dveff_mdl_zoom = model.get_dveff_signed_from_t(pars, t_zoom)
 
         # insert zeros and take norm
-        t_zoom, dveff_mdl_many = insert_zeros(t_zoom, dveff_mdl_zoom)
+        t_zoom, dveff_mdl_zoom = insert_zeros(t_zoom, dveff_mdl_zoom)
         dveff_mdl_zoom = np.abs(dveff_mdl_zoom)
 
         plt.ylim(ylim1)
@@ -366,7 +368,8 @@ def visualize_model_zoom(model, data, pars):
 
         plt.plot(t_zoom.mjd, dveff_mdl_zoom, **mdl_style)
         plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
-        plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
+        if data.t_dud:
+            plt.plot(data.t_dud.mjd, dveff_mdl_dud, **dud_style)
         plt.xlim(tlim_zoom)
 
         # panel title
@@ -414,12 +417,13 @@ def visualize_model_folded(model, data, pars, npoints=2000):
     dveff_earth_res = dveff_signed_obs - dveff_full_mdl + dveff_earth_mdl
 
     # Compute model components at times of failed observations
-    (
-        dveff_full_dud,
-        dveff_inner_dud,
-        dveff_outer_dud,
-        dveff_earth_dud,
-    ) = model.get_dveff_signed_components_from_t(pars, t_dud)
+    if t_dud:
+        (
+            dveff_full_dud,
+            dveff_inner_dud,
+            dveff_outer_dud,
+            dveff_earth_dud,
+        ) = model.get_dveff_signed_components_from_t(pars, t_dud)
 
     # Compute model components at dense grid of times
     (
@@ -439,13 +443,15 @@ def visualize_model_folded(model, data, pars, npoints=2000):
     # calculate day of year
     t_0_earth = Time("2021-01-01T00:00:00.000", format="isot", scale="utc")
     ph_earth_obs = (t_obs - t_0_earth).to(u.day) % SIDEREAL_YEAR
-    ph_earth_dud = (t_dud - t_0_earth).to(u.day) % SIDEREAL_YEAR
+    if t_dud:
+        ph_earth_dud = (t_dud - t_0_earth).to(u.day) % SIDEREAL_YEAR
     ph_earth_gen = (t_gen - t_0_earth).to(u.day) % SIDEREAL_YEAR
     idx = np.argsort(ph_earth_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_earth_gen[idx], dveff_earth_gen[idx], **mdl_style)
-    plt.plot(ph_earth_dud, dveff_earth_dud, **dud_style)
+    if t_dud:
+        plt.plot(ph_earth_dud, dveff_earth_dud, **dud_style)
     plt.errorbar(ph_earth_obs, dveff_earth_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, SIDEREAL_YEAR.to(u.day))
@@ -463,13 +469,15 @@ def visualize_model_folded(model, data, pars, npoints=2000):
 
     # calculate phases
     ph_outer_obs = (t_obs - model.target.t_asc_o) / model.target.p_orb_o % 1
-    ph_outer_dud = (t_dud - model.target.t_asc_o) / model.target.p_orb_o % 1
+    if t_dud:
+        ph_outer_dud = (t_dud - model.target.t_asc_o) / model.target.p_orb_o % 1
     ph_outer_gen = (t_gen - model.target.t_asc_o) / model.target.p_orb_o % 1
     idx = np.argsort(ph_outer_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_outer_gen[idx], dveff_outer_gen[idx], **mdl_style)
-    plt.plot(ph_outer_dud, dveff_outer_dud, **dud_style)
+    if t_dud:
+        plt.plot(ph_outer_dud, dveff_outer_dud, **dud_style)
     plt.errorbar(ph_outer_obs, dveff_outer_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
@@ -487,13 +495,15 @@ def visualize_model_folded(model, data, pars, npoints=2000):
 
     # calculate phases
     ph_inner_obs = (t_obs - model.target.t_asc_i) / model.target.p_orb_i % 1
-    ph_inner_dud = (t_dud - model.target.t_asc_i) / model.target.p_orb_i % 1
+    if t_dud:
+        ph_inner_dud = (t_dud - model.target.t_asc_i) / model.target.p_orb_i % 1
     ph_inner_gen = (t_gen - model.target.t_asc_i) / model.target.p_orb_i % 1
     idx = np.argsort(ph_inner_gen)
 
     plt.axhline(**axh_style)
     plt.plot(ph_inner_gen[idx], dveff_inner_gen[idx], **mdl_style)
-    plt.plot(ph_inner_dud, dveff_inner_dud, **dud_style)
+    if t_dud:
+        plt.plot(ph_inner_dud, dveff_inner_dud, **dud_style)
     plt.errorbar(ph_inner_obs, dveff_inner_res, yerr=data.dveff_err, **obs_style)
 
     plt.xlim(0, 1)
