@@ -58,50 +58,146 @@ dtsqrttau_res_lbl = f"residual  {dtsqrttau_symb}  {dtsqrttau_unit}"
 
 
 def plot_data(data):
-    plt.figure(figsize=(12, 10))
+    quantity_support()
+    time_support(format="iso")
 
-    plt.subplots_adjust(wspace=0.1)
+    plt.figure(figsize=(12, 9))
 
-    ax0 = plt.subplot(211)
+    col_zoom_lbl = "black"
 
-    plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
+    # --- full time series ---
 
-    plt.xlabel("MJD")
+    tlim_long = data.t_lim_mjd
+
+    # model and data
+    ax1 = plt.subplot(311)
+    # plt.plot(
+    #     data.t_obs,
+    #     data.dveff_obs,
+    #     **obs_style,
+    # )
+    plt.errorbar(
+        data.t_obs.mjd,
+        data.dveff_obs,
+        yerr=data.dveff_err,
+        **obs_style,
+    )
+
+    # tick_t_iso = [
+    #     "2021-04-01",
+    #     "2021-07-01",
+    #     "2021-10-01",
+    #     "2022-01-01",
+    #     "2022-04-01",
+    #     "2022-07-01",
+    #     "2022-10-01",
+    #     "2023-01-01",
+    # ]
+    # tick_t = Time(tick_t_iso, format="iso")
+    ax1.xaxis.tick_top()
+    # ax1.set_xticks(tick_t)
+
+    plt.xlim(tlim_long)
+    plt.title("(a)   full model", **title_kwargs)
+    # plt.xlabel("MJD")
     plt.ylabel(dveff_normed_lbl)
 
-    ylim = (0, ax0.get_ylim()[1])
-    plt.ylim(ylim)
+    # save ylims
+    ylim1 = (0, ax1.get_ylim()[1] * 1.1)
+    plt.ylim(ylim1)
 
-    xlim_list = [
-        (59299.4, 59300.4),
-        (59403.1, 59404.1),
-        (59497.9, 59498.9),
-        (59574.6, 59575.6),
-        (59647.4, 59648.4),
+    secax = ax1.secondary_yaxis("right", functions=(dveff2dtsqrttau, dtsqrttau2dveff))
+    secax.set_ylabel(dtsqrttau_lbl)
+
+    # --- zooms ---
+
+    tlim_zoom_half = 0.55
+    tlim_zoom_size = np.array([-1, 1]) * tlim_zoom_half
+    t_zoom_list = [
+        59299.84,
+        59403.57,
+        59498.39,
+        59575.09,
+        59647.95,
+        59732.65,
+        59827.41,
+        59919.22,
     ]
 
-    for isubplot, xlims in zip(range(6, 11), xlim_list):
-        ax = plt.subplot(2, 5, isubplot)
+    izoom_big = {
+        0: np.array([-2.7, 0]),
+        # 1: np.array([-3.7, 0]),
+        2: np.array([-2.3, 0]),
+        # 7: np.array([-3.7, 0]),
+    }
 
-        plt.ylim(ylim)
+    iax_upper = 5
+    for izoom, t_zoom in enumerate(t_zoom_list):
+        # generate letter of panel
+        letter = chr(ord("`") + izoom + 3)
 
-        plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
+        # create subplot
+        iax_lower = iax_upper + 1
+        iax_upper = iax_lower
+        if izoom in izoom_big:
+            iax_upper += 1
+        ax3 = plt.subplot(3, 5, (iax_lower, iax_upper))
 
-        if isubplot == 6:
+        tlim_zoom = t_zoom + tlim_zoom_size
+        if izoom in izoom_big:
+            tlim_zoom += izoom_big[izoom]
+
+        # add zoom label to main plot
+        if t_zoom > tlim_long[0] and t_zoom < tlim_long[1]:
+            tmid_zoom = np.mean(tlim_zoom)
+            ax1.text(
+                tmid_zoom,
+                -5,
+                f"{letter}",
+                fontsize=15,
+                color=col_zoom_lbl,
+                va="top",
+                ha="center",
+            )
+
+        plt.ylim(ylim1)
+
+        # set vertical axis labels on left
+        if iax_lower % 5 == 1:
             plt.ylabel(dveff_normed_lbl)
         else:
             plt.ylabel("")
-            ax.set_yticklabels([])
+            ax3.set_yticklabels([])
 
-        plt.xlim(xlims)
+        # create secondary axis
+        secax = ax3.secondary_yaxis(
+            "right", functions=(dveff2dtsqrttau, dtsqrttau2dveff)
+        )
+
+        # set vertical axis labels on right
+        if iax_upper % 5 == 0:
+            secax.set_ylabel(dtsqrttau_lbl)
+        else:
+            secax.set_yticklabels([])
+
+        plt.errorbar(data.t_obs.mjd, data.dveff_obs, yerr=data.dveff_err, **obs_style)
+        plt.xlim(tlim_zoom)
+
+        # panel title
+        caldate = Time(tlim_zoom[0] + tlim_zoom_half, format="mjd").iso[:10]
+        if izoom in izoom_big:
+            caldate2 = Time(tlim_zoom[-1] - tlim_zoom_half, format="mjd").iso[:10]
+            caldate += "   &   " + caldate2
+        plt.title(f" ({letter})   {caldate}", color=col_zoom_lbl, **title_kwargs)
 
         plt.draw()
 
-        mjd_offset = ax.get_xaxis().get_major_formatter().offset
+        mjd_offset = ax3.get_xaxis().get_major_formatter().offset
 
-        ax.xaxis.offsetText.set_visible(False)
+        ax3.xaxis.offsetText.set_visible(False)
         plt.xlabel(rf"$\mathrm{{MJD}} - {mjd_offset:.0f}$")
 
+    plt.tight_layout()
     plt.show()
 
 
