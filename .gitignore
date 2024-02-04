@@ -1,17 +1,20 @@
 # Compiled files
-__pycache__
+__pycache__/
+
+# Distribution / packaging
+*.egg-info/
 
 # Jupyter Notebook
-.ipynb_checkpoints
+.ipynb_checkpoints/
 
 # pyenv
 .python-version
 
 # Mac OSX
-.DS_Store
+.DS_Store/
 
 # VSCode
-.vscode
+.vscode/
 
 # Backup code junk file
 bup.py

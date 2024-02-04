@@ -1,0 +1,1 @@
+A scintillometric model of the triple-system pulsar J0337+1715.

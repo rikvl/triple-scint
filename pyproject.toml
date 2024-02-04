@@ -1,0 +1,21 @@
+[project]
+name = "triple-scint"
+version = "0.1.0"
+description = "Scintillometry for triple-system pulsar"
+readme = "README.md"
+dependencies = [
+    "IPython",
+    "numpy",
+    "scipy",
+    "astropy",
+    "emcee",
+    "corner",
+    "kepler.py",
+]
+
+[[project.authors]]
+name = "Rik van Lieshout"
+email = "lieshout@cita.utoronto.ca"
+
+[project.license]
+text = "BSD-3-Clause"
