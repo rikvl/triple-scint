@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from astropy import units as u
@@ -9,6 +11,8 @@ from scipy.optimize import curve_fit, minimize
 from scipy.stats import kstest
 
 import emcee
+
+from multiprocessing import Pool
 
 from .uncertainty import SamplePhys
 from .freeparams import guess_pars_phen, guess_pars_phys, pardict_phys
@@ -316,9 +320,17 @@ class MCMC:
         self.backend = emcee.backends.HDFBackend(backend_filename)
         self.backend.reset(nwalker, self.ndim)
 
+        # Setup parallelization
+        os.environ["OMP_NUM_THREADS"] = "1"
+        self.pool = Pool()
+
         # Setup sampler
         self.sampler = emcee.EnsembleSampler(
-            nwalker, self.ndim, self.fit.get_log_prob, backend=self.backend
+            nwalker,
+            self.ndim,
+            self.fit.get_log_prob,
+            pool=self.pool,
+            backend=self.backend,
         )
 
         # Initial positions of walkers
