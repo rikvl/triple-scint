@@ -61,7 +61,7 @@ def plot_data(data):
     quantity_support()
     time_support(format="iso")
 
-    plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(12, 9))
 
     col_zoom_lbl = "black"
 
@@ -200,12 +200,14 @@ def plot_data(data):
     plt.tight_layout()
     plt.show()
 
+    return fig
+
 
 def visualize_model_zoom(model, data, pars):
     quantity_support()
     time_support(format="iso")
 
-    plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(12, 12))
 
     # plt.subplots_adjust(wspace=0.1, hspace=0.2)
 
@@ -389,6 +391,8 @@ def visualize_model_zoom(model, data, pars):
     plt.tight_layout()
     plt.show()
 
+    return fig
+
 
 def visualize_model_folded(model, data, pars, npoints=2000):
     quantity_support()
@@ -433,7 +437,7 @@ def visualize_model_folded(model, data, pars, npoints=2000):
         dveff_earth_gen,
     ) = model.get_dveff_signed_components_from_t(pars, t_gen)
 
-    plt.subplots(nrows=1, ncols=3, figsize=(12, 4), sharey=True)
+    fig = plt.subplots(nrows=1, ncols=3, figsize=(12, 4), sharey=True)
     plt.subplots_adjust(wspace=0.1)
 
     # --- Earth's motion ---
@@ -517,6 +521,8 @@ def visualize_model_folded(model, data, pars, npoints=2000):
 
     plt.show()
 
+    return fig
+
 
 def visualize_model_components(model, data, pars):
     quantity_support()
@@ -552,7 +558,7 @@ def visualize_model_components(model, data, pars):
         dveff_earth_gen,
     ) = model.get_dveff_signed_components_from_t(pars, t_gen)
 
-    plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(12, 9))
 
     # --- full model, signed ---
 
@@ -595,6 +601,8 @@ def visualize_model_components(model, data, pars):
     plt.ylabel(dveff_signed_lbl)
 
     plt.show()
+
+    return fig
 
 
 def insert_zeros(x, y):
