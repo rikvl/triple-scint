@@ -177,6 +177,17 @@ def pars_phen2comm(pars_phen):
     return pars_comm
 
 
+def pars_chip2xi(pars_comm, cosi_p, omega_p):
+    """Extract screen angle from intermediate parameters and pulsar parameters."""
+
+    chi_p = pars_comm["chi_p"]
+
+    delta_omega_p = np.arctan2(np.sin(chi_p) / cosi_p, np.cos(chi_p))
+    xi = (omega_p + delta_omega_p) % (180 * u.deg)
+
+    return xi.to(u.deg)
+
+
 def pars_cosip2dp(pars_comm, cosi_p, target):
     """Convert cos(i_p) to d_p using intermediate parameters."""
 
