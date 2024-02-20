@@ -9,23 +9,6 @@ SIDEREAL_YEAR = 365.256363004 * u.day
 UNIT_DVEFF = u.km / u.s / u.kpc**0.5
 UNIT_DTSQRTTAU = u.us**0.5 / u.yr
 
-PARS_FIT_LABELS = [
-    r"$\cos(i_\mathrm{p})$",
-    r"$\Omega_\mathrm{p}$",
-    r"$d_\mathrm{p}$",
-    r"$s$",
-    r"$\xi$",
-    r"$v_\mathrm{lens,\parallel}$",
-]
-
-PARS_MDL_LABELS = PARS_FIT_LABELS.copy()
-PARS_MDL_LABELS[0] = r"$i_\mathrm{p}$"
-
-PARS_UNIT_STRS = [" (deg)", " (deg)", " (kpc)", "", " (deg)", " (km/s)"]
-PARS_LABELS_UNITS = [
-    label + unit_str for label, unit_str in zip(PARS_MDL_LABELS, PARS_UNIT_STRS)
-]
-
 # Earth's orbital shape parameters
 p_orb_e = SIDEREAL_YEAR
 a_e = 1.0000010178 * u.au

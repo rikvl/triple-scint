@@ -13,7 +13,7 @@ from astropy.visualization import quantity_support, time_support
 
 import corner
 
-from .utils import SIDEREAL_YEAR, PARS_FIT_LABELS, UNIT_DVEFF, UNIT_DTSQRTTAU
+from .utils import SIDEREAL_YEAR, UNIT_DVEFF, UNIT_DTSQRTTAU
 
 
 obs_style = {
@@ -653,13 +653,13 @@ def plot_convergence(mcmc):
 
     plt.plot(n, n / mcmc.ntau_goal, "--k")
 
-    for i, y in enumerate(mcmc.autocorr.T):
+    for par, y in zip(mcmc.pardict.values(), mcmc.autocorr.T):
         y = y[: mcmc.index]
-        plt.plot(n, y, label=PARS_FIT_LABELS[i])
+        plt.plot(n, y, label=f"${par.symbol}$")
     plt.plot(n, np.mean(mcmc.autocorr[: mcmc.index, :], axis=1), ":k", label="mean")
 
     plt.xlim(0, n.max())
-    plt.ylim(0, y.max() + 0.1 * (y.max() - y.min()))
+    plt.ylim(0, mcmc.autocorr.max() * 1.1)
 
     plt.xlabel("number of steps")
     plt.ylabel(r"$\hat{\tau}$")
@@ -671,15 +671,15 @@ def plot_convergence(mcmc):
 def plot_chains(mcmc):
     """Plot MCMC chains."""
 
-    samples = mcmc.sampler.get_chain()
+    samples = mcmc.backend.get_chain()
 
     fig, axes = plt.subplots(mcmc.ndim, figsize=(12, 14), sharex=True)
 
-    for i in range(mcmc.ndim):
+    for i, par in enumerate(mcmc.pardict.values()):
         ax = axes[i]
         ax.plot(samples[:, :, i], "k", alpha=0.3)
         ax.set_xlim(0, len(samples))
-        ax.set_ylabel(PARS_FIT_LABELS[i])
+        ax.set_ylabel(f"${par.symbol}$")
         ax.yaxis.set_label_coords(-0.1, 0.5)
 
     axes[-1].set_xlabel("step number")
