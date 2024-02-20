@@ -257,6 +257,20 @@ class Target:
         else:
             raise ValueError(f"Unrecognized ref_omega_p {ref_omega_p}")
 
+        # compute orientation of Earth's orbit (orbital inclination and longitude
+        # of ascending node) with respect to line of sight towards source
+        source_equat = self.psr_coord
+        source_eclip = source_equat.barycentricmeanecliptic
+        ascnod_eclip = SkyCoord(
+            lon=source_eclip.lon - 90 * u.deg,
+            lat=0 * u.deg,
+            frame="barycentricmeanecliptic",
+        )
+        ascnod_equat = SkyCoord(ascnod_eclip).icrs
+
+        self.i_e = source_eclip.lat.deg * u.deg + 90 * u.deg
+        self.omega_e = source_equat.position_angle(ascnod_equat).deg * u.deg
+
 
 class Observatory:
     """Fixed parameters related to observatory (i.e., its location on Earth)."""
