@@ -6,8 +6,67 @@ from astropy import uncertainty as unc
 from IPython.display import display, Math
 
 from .freeparams import pardict_phen, pardict_phys, pardict_pres
-from .freeparams import pars_phen2phys_d_p, pars_phen2phys_cosi_p, pars_phys2pres
+from .freeparams import pars_phen2phys_d_p, pars_phen2phys_cosi_p
+from .freeparams import pars_phen2phys_omega_p, pars_phys2pres
 from .utils import gaussian, UNIT_DVEFF, tex_uncertainties
+
+
+def gen_samp_cosi_p(target, nmc=40000):
+    """Generate a MC sample in cos(i_p) from prior."""
+
+    i_p_mu = target.i_p_prior_mu
+    i_p_sig = target.i_p_prior_sig
+
+    # generate samples according to prior
+    i_p_init = np.random.normal(size=nmc) * i_p_sig + i_p_mu
+    i_p_init %= 180 * u.deg
+
+    samp_i_p = unc.Distribution(i_p_init)
+
+    # convert to cosine of inclination
+    samp_cosi_p = np.cos(samp_i_p)
+
+    return samp_cosi_p
+
+
+def gen_samp_omega_p(target, nmc=40000):
+    """Generate a MC sample in omega_p from prior."""
+
+    omega_p_mu = target.omega_p_prior_mu
+    omega_p_sig = target.omega_p_prior_sig
+
+    # generate samples according to prior
+    omega_p_init = np.random.normal(size=nmc) * omega_p_sig + omega_p_mu
+    omega_p_init %= 360 * u.deg
+
+    samp_omega_p = unc.Distribution(omega_p_init)
+
+    return samp_omega_p
+
+
+def gen_samp_d_p(target, nmc=40000):
+    """Generate a MC sample in distance_p from parallax prior."""
+
+    parallax_mu = target.parallax_prior_mu
+    parallax_sig = target.parallax_prior_sig
+
+    # generate samples according to prior
+    parallax_iter = np.random.normal(size=nmc) * parallax_sig + parallax_mu
+
+    # replace any negative samples
+    while np.any(parallax_iter <= 0):
+        idx_neg = np.where(parallax_iter <= 0)
+        parallax_replace = (
+            np.random.normal(size=len(idx_neg[0])) * parallax_sig + parallax_mu
+        )
+        parallax_iter[idx_neg] = parallax_replace
+
+    samp_parallax = unc.Distribution(parallax_iter)
+
+    # convert to parallax of distance
+    samp_d_p = samp_parallax.to(u.kpc, equivalencies=u.parallax())
+
+    return samp_d_p
 
 
 class SampleBase:
@@ -87,27 +146,28 @@ class SamplePhys(SampleBase):
 
         self.from_phen_common(phen)
 
-        i_p_mu = phen.target.i_p_prior_mu
-        i_p_sig = phen.target.i_p_prior_sig
-
-        # generate samples according to prior
-        i_p_iter = np.random.normal(size=self.nmc) * i_p_sig + i_p_mu
-        i_p_iter %= 180 * u.deg
-
-        # replace any negative samples
-        while np.any(i_p_iter <= 0):
-            idx_neg = np.where(i_p_iter <= 0)
-            i_p_replace = np.random.normal(size=len(idx_neg[0])) * i_p_sig + i_p_mu
-            i_p_replace %= 180 * u.deg
-            i_p_iter[idx_neg] = i_p_replace
-
-        samp_i_p = unc.Distribution(i_p_iter)
-
-        # convert to cosine of inclination
-        samp_cosi_p = np.cos(samp_i_p)
+        # generate MC sample in cosi_p
+        samp_cosi_p = gen_samp_cosi_p(phen.target, self.nmc)
 
         # convert phenomenological parameters to physical parameters
         self.samp_dict = pars_phen2phys_cosi_p(phen.samp_dict, self.target, samp_cosi_p)
+
+    def from_phen_and_omega_p(self, phen):
+        """Create sample in physical parameters from SamplePhen and LAN.
+
+        Propagate uncertainties from phenomenological model parameters to
+        physical parameters using a known pulsar orbital longitude of ascending node.
+        """
+
+        self.from_phen_common(phen)
+
+        # generate MC sample in omega_p
+        samp_omega_p = gen_samp_omega_p(phen.target, self.nmc)
+
+        # convert phenomenological parameters to physical parameters
+        self.samp_dict = pars_phen2phys_omega_p(
+            phen.samp_dict, self.target, samp_omega_p
+        )
 
     def from_phen_and_parallax(self, phen, cos_sign=None):
         """Create sample in physical parameters from SamplePhen and parallax.
@@ -122,24 +182,8 @@ class SamplePhys(SampleBase):
         cos_sign = cos_sign or np.sign(np.cos(phen.target.i_p_prior_mu))
         self.cos_sign = cos_sign
 
-        parallax_mu = phen.target.parallax_prior_mu
-        parallax_sig = phen.target.parallax_prior_sig
-
-        # generate samples according to prior
-        parallax_iter = np.random.normal(size=self.nmc) * parallax_sig + parallax_mu
-
-        # replace any negative samples
-        while np.any(parallax_iter <= 0):
-            idx_neg = np.where(parallax_iter <= 0)
-            parallax_replace = (
-                np.random.normal(size=len(idx_neg[0])) * parallax_sig + parallax_mu
-            )
-            parallax_iter[idx_neg] = parallax_replace
-
-        samp_parallax = unc.Distribution(parallax_iter)
-
-        # convert to parallax of distance
-        samp_d_p = samp_parallax.to(u.kpc, equivalencies=u.parallax())
+        # generate MC sample in d_p
+        samp_d_p = gen_samp_d_p(phen.target, self.nmc)
 
         # convert phenomenological parameters to physical parameters
         self.samp_dict = pars_phen2phys_d_p(
